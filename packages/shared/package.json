@@ -1,0 +1,1 @@
+{"exports":{".":"./dist/index.js","./package.json":"./package.json"},"main":"./dist/index.js","name":"@oruva/shared","scripts":{"build":"tsc"},"types":"./dist/index.d.ts","version":"0.1.0"}

@@ -1,0 +1,13 @@
+node_modules
+apps/web/dist
+apps/web/node_modules
+apps/api/dist
+apps/api/node_modules
+packages/shared/dist
+.env
+apps/*/.env
+data
+*.db
+*.db-wal
+*.db-shm
+.git
