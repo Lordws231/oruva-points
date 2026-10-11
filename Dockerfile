@@ -10,7 +10,8 @@ COPY packages/shared/package.json ./packages/shared/
 COPY apps/api/package.json ./apps/api/
 RUN npm ci --workspace apps-api --include-workspace-root --no-audit --no-fund
 
-# Copy sources and build
+# Copy sources and build (workspace tsconfigs extend the root base config)
+COPY tsconfig.base.json ./
 COPY packages/shared ./packages/shared
 COPY apps/api ./apps/api
 RUN npm run build --workspace @oruva/shared && npm run build --workspace apps-api
