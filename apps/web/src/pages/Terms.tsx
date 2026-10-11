@@ -38,12 +38,11 @@ const sections: { title: string; body: React.ReactNode }[] = [
     title: "4. ORVA token rewards",
     body: (
       <p>
-        ORVA is an SPL token on the Solana blockchain distributed as a
-        community reward — 100,000,000 ORVA per season, shared pro-rata among
-        participants based on season points. The current program operates on
-        Solana <strong>devnet (a test network)</strong>; devnet tokens have no
-        monetary value. A future mainnet deployment will be announced
-        separately. Nothing on this site is financial advice.
+        ORVA is the official SPL token of the Oruva community on the Solana
+        blockchain, distributed as a community reward — 100,000,000 ORVA per
+        season, shared pro-rata among participants based on season points.
+        Rewards are paid to the Solana wallet you connect at claim time.
+        Nothing on this site is financial advice.
       </p>
     ),
   },
