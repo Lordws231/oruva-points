@@ -19,6 +19,8 @@ import Tasks from "./pages/Tasks";
 import Leaderboard from "./pages/Leaderboard";
 import Claim from "./pages/Claim";
 import Legal from "./pages/Legal";
+import Terms from "./pages/Terms";
+import Privacy from "./pages/Privacy";
 
 const CLUSTER = (import.meta.env.VITE_SOLANA_CLUSTER as string | undefined) ?? "devnet";
 
@@ -48,6 +50,8 @@ export default function App() {
                   <Route path="leaderboard" element={<Leaderboard />} />
                   <Route path="claim" element={<Claim />} />
                   <Route path="legal" element={<Legal />} />
+                  <Route path="terms" element={<Terms />} />
+                  <Route path="privacy" element={<Privacy />} />
                   <Route path="*" element={<Home />} />
                 </Route>
               </Routes>

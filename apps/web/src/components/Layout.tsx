@@ -79,8 +79,11 @@ export default function Layout() {
       <footer className="border-t border-navy-800 py-6">
         <div className="mx-auto flex max-w-6xl flex-wrap items-center gap-4 px-4 text-sm text-slate-400">
           <span>Oruva Transportation Services · Points → ORVA (Solana)</span>
-          <Link to="/legal" className="ml-auto hover:text-white">
+          <Link to="/terms" className="ml-auto hover:text-white">
             Terms
+          </Link>
+          <Link to="/privacy" className="hover:text-white">
+            Privacy
           </Link>
           <a
             href="https://x.com/Oruvatransport"
