@@ -110,7 +110,7 @@ Put the returned `id` values into `X_ORUVA_USER_ID` and `X_FOUNDER_USER_ID`.
 
 - The 18-month engagement farming program runs in **3 seasons of 26 weekly
   epochs** (Monday 00:00 → Monday 00:00 **Africa/Lagos**), starting
-  2026-10-12: Season 1 "Ignition" (user testing, months 1–6), Season 2
+  2026-10-26: Season 1 "Ignition" (user testing, months 1–6), Season 2
   "Refinement" (feedback, months 7–12), Season 3 "Acceleration" (growth,
   months 13–18).
 - Points accrue per weekly epoch exactly as before; a user's **season score**

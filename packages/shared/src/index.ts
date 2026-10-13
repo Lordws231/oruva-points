@@ -411,9 +411,11 @@ export function quoteClaim(
 
 /**
  * First Monday (Africa/Lagos) of the farming program.
- * Changeable any time before launch. Verified: 2026-10-12 is a Monday.
+ * Changeable any time before launch. Verified: 2026-10-26 is a Monday.
+ * Postponed from 2026-10-12 on Oct 13, 2026 — site was live but zero
+ * points had been farmed and no launch announcement had gone out.
  */
-export const FARMING_START_EPOCH_ID = "2026-10-12";
+export const FARMING_START_EPOCH_ID = "2026-10-26";
 /** Weekly epochs per season (26 weeks ≈ 6 months). */
 export const SEASON_WEEKS = 26;
 /** Number of seasons in the program. */
