@@ -1,6 +1,7 @@
 import type {
   ClaimableSeason,
   LeaderboardEntry,
+  LinkedAccount,
   Pin,
   PointsMe,
   TaskDef,
@@ -9,6 +10,10 @@ import type {
 
 const BASE: string =
   (import.meta.env.VITE_API_URL as string | undefined) ?? "";
+
+/** Full-page OAuth authorize URL for linking a social account. */
+export const authConnectUrl = (provider: "instagram" | "threads"): string =>
+  `${BASE}/api/auth/${provider}`;
 
 export class ApiError extends Error {
   status: number;
@@ -41,6 +46,12 @@ export const api = {
   me: () => req<{ user: User | null }>("/api/auth/me"),
   xLogin: () => req<{ authorizeUrl: string }>("/api/auth/x"),
   logout: () => req<{ ok: true }>("/api/auth/logout", { method: "POST" }),
+
+  linked: () => req<{ accounts: LinkedAccount[] }>("/api/auth/linked"),
+  disconnectLinked: (provider: "instagram" | "threads") =>
+    req<{ ok: true }>(`/api/auth/linked/${provider}/disconnect`, {
+      method: "POST",
+    }),
 
   tasks: () => req<{ tasks: TaskDef[] }>("/api/tasks"),
   completeTask: (id: string, confirm = false) =>

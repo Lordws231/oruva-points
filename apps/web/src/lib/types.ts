@@ -67,3 +67,9 @@ export interface PointsMe {
   lifetime: number;
   claimableEpochs: string[];
 }
+
+export interface LinkedAccount {
+  provider: "threads" | "instagram";
+  username: string;
+  linkedAt: string;
+}

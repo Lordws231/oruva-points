@@ -84,6 +84,20 @@ db.exec(`
     attempts   INTEGER NOT NULL DEFAULT 0,
     created_at TEXT NOT NULL DEFAULT (datetime('now'))
   );
+  -- OAuth-linked social accounts (Instagram + Threads via Meta OAuth).
+  -- One row per (user, provider); access tokens are stored server-side and
+  -- never returned by any API endpoint.
+  CREATE TABLE IF NOT EXISTS linked_accounts (
+    x_user_id        TEXT NOT NULL REFERENCES users(x_user_id),
+    provider         TEXT NOT NULL CHECK (provider IN ('threads','instagram')),
+    provider_user_id TEXT NOT NULL,
+    username         TEXT NOT NULL,
+    access_token     TEXT NOT NULL,
+    token_expires_at TEXT,
+    created_at       TEXT NOT NULL DEFAULT (datetime('now')),
+    updated_at       TEXT NOT NULL DEFAULT (datetime('now')),
+    PRIMARY KEY (x_user_id, provider)
+  );
 `);
 
 // ---------------------------------------------------------------- helpers
@@ -627,6 +641,60 @@ export function listAwaitingInstagramChecks(): IgPendingRow[] {
     )
     .all();
   return asRows<IgPendingRow>(r);
+}
+
+// ---------------------------------------------------------------- linked accounts (Meta OAuth)
+
+export type LinkedProvider = "threads" | "instagram";
+
+export interface LinkedAccountRow {
+  x_user_id: string;
+  provider: LinkedProvider;
+  provider_user_id: string;
+  username: string;
+  access_token: string;
+  token_expires_at: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+/** Insert or replace the user's linked account for a provider. */
+export function upsertLinkedAccount(
+  xUserId: string,
+  provider: LinkedProvider,
+  providerUserId: string,
+  username: string,
+  accessToken: string,
+  tokenExpiresAt: string | null
+): void {
+  db.prepare(
+    `INSERT INTO linked_accounts
+       (x_user_id, provider, provider_user_id, username, access_token, token_expires_at, updated_at)
+     VALUES (?, ?, ?, ?, ?, ?, datetime('now'))
+     ON CONFLICT(x_user_id, provider) DO UPDATE SET
+       provider_user_id = excluded.provider_user_id,
+       username = excluded.username,
+       access_token = excluded.access_token,
+       token_expires_at = excluded.token_expires_at,
+       updated_at = datetime('now')`
+  ).run(xUserId, provider, providerUserId, username, accessToken, tokenExpiresAt);
+}
+
+/** All linked accounts for a user (tokens never leave this module). */
+export function listLinkedAccounts(xUserId: string): LinkedAccountRow[] {
+  const r = db
+    .prepare(`SELECT * FROM linked_accounts WHERE x_user_id = ?`)
+    .all(xUserId);
+  return asRows<LinkedAccountRow>(r);
+}
+
+export function deleteLinkedAccount(
+  xUserId: string,
+  provider: LinkedProvider
+): void {
+  db.prepare(
+    `DELETE FROM linked_accounts WHERE x_user_id = ? AND provider = ?`
+  ).run(xUserId, provider);
 }
 
 // ---------------------------------------------------------------- leaderboard

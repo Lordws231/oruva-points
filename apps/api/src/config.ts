@@ -46,4 +46,19 @@ export const config = {
    * (x-admin-key header). Empty = admin endpoints disabled.
    */
   adminKey: process.env.ADMIN_KEY ?? "",
+
+  // Threads OAuth (Meta "Oruva Points" app — "Access the Threads API" use case)
+  threadsAppId: process.env.THREADS_APP_ID ?? "",
+  threadsAppSecret: process.env.THREADS_APP_SECRET ?? "",
+  threadsRedirectUri:
+    process.env.THREADS_REDIRECT_URI ??
+    "https://apps-api-production-8edb.up.railway.app/api/auth/threads/callback",
+
+  // Instagram OAuth (Meta "Oruva Points" app — "Instagram API with Instagram
+  // Login" product; uses the Instagram app ID/secret, not the parent app's)
+  igAppId: process.env.IG_APP_ID ?? "",
+  igAppSecret: process.env.IG_APP_SECRET ?? "",
+  igRedirectUri:
+    process.env.IG_REDIRECT_URI ??
+    "https://apps-api-production-8edb.up.railway.app/api/auth/instagram/callback",
 };

@@ -5,9 +5,9 @@ import {
   describeMilestone,
   taskById,
 } from "@oruva/shared";
-import { api, ApiError } from "../lib/api";
+import { api, ApiError, authConnectUrl } from "../lib/api";
 import { useAuth } from "../lib/auth";
-import type { TaskDef, Pin } from "../lib/types";
+import type { TaskDef, Pin, LinkedAccount } from "../lib/types";
 import GoogleMapsPicker from "../components/GoogleMapsPicker";
 import OsmMapPicker from "../components/OsmMapPicker";
 
@@ -35,6 +35,133 @@ type EngCheckResult =
       };
     }
   | { kind: "pending"; message: string };
+
+/** Linked Instagram + Threads accounts (Meta OAuth). */
+function LinkedAccounts() {
+  const [accounts, setAccounts] = useState<LinkedAccount[]>([]);
+  const [busy, setBusy] = useState<string | null>(null);
+  const [note, setNote] = useState<string | null>(null);
+
+  const load = useCallback(async () => {
+    try {
+      const r = await api.linked();
+      setAccounts(r.accounts);
+    } catch {
+      /* ignore until linked */
+    }
+  }, []);
+
+  useEffect(() => {
+    load();
+    // One-shot feedback from the OAuth callback redirect.
+    const params = new URLSearchParams(window.location.search);
+    const linked = params.get("linked");
+    const err = params.get("link_error");
+    if (linked === "threads" || linked === "instagram") {
+      setNote(
+        `✓ ${linked === "threads" ? "Threads" : "Instagram"} account connected.`
+      );
+    } else if (err) {
+      setNote(
+        err === "denied"
+          ? "Connection cancelled — no account was linked."
+          : "Couldn't connect that account — please try again."
+      );
+    }
+    if (linked || err) {
+      params.delete("linked");
+      params.delete("link_error");
+      const qs = params.toString();
+      window.history.replaceState(
+        null,
+        "",
+        `${window.location.pathname}${qs ? `?${qs}` : ""}`
+      );
+    }
+  }, [load]);
+
+  async function disconnect(provider: "instagram" | "threads") {
+    setBusy(provider);
+    try {
+      await api.disconnectLinked(provider);
+      await load();
+    } catch {
+      setNote("Couldn't disconnect — please try again.");
+    } finally {
+      setBusy(null);
+    }
+  }
+
+  const byProvider = (p: "instagram" | "threads") =>
+    accounts.find((a) => a.provider === p);
+
+  return (
+    <section className="rounded-2xl border border-navy-700 bg-navy-900 p-6">
+      <h2 className="text-xl font-bold">Linked accounts</h2>
+      <p className="mt-1 text-sm text-slate-400">
+        Connect your Instagram and Threads accounts to unlock verified social
+        tasks. You stay signed in here — this only links the accounts.
+      </p>
+      {note && (
+        <div className="mt-3 rounded-lg border border-navy-700 bg-navy-950 px-3 py-2 text-sm">
+          {note}
+        </div>
+      )}
+      <div className="mt-4 grid gap-4 md:grid-cols-2">
+        {(["instagram", "threads"] as const).map((p) => {
+          const acc = byProvider(p);
+          const label = p === "instagram" ? "Instagram" : "Threads";
+          return (
+            <div
+              key={p}
+              className="rounded-xl border border-navy-700 bg-navy-950 p-4"
+            >
+              <div className="flex items-center justify-between">
+                <h3 className="font-bold">{label}</h3>
+                {acc ? (
+                  <span className="rounded-full bg-emerald-500/10 px-2.5 py-1 text-xs font-semibold text-emerald-400">
+                    Connected
+                  </span>
+                ) : (
+                  <span className="rounded-full bg-navy-900 px-2.5 py-1 text-xs font-semibold text-slate-400">
+                    Not connected
+                  </span>
+                )}
+              </div>
+              {acc ? (
+                <div className="mt-3 flex items-center justify-between gap-2">
+                  <span className="truncate text-sm text-slate-300">
+                    @{acc.username}
+                  </span>
+                  <button
+                    disabled={busy === p}
+                    onClick={() => disconnect(p)}
+                    className="rounded-lg border border-navy-700 px-3 py-1.5 text-sm font-semibold hover:border-ember-500 disabled:opacity-50"
+                  >
+                    {busy === p ? "…" : "Disconnect"}
+                  </button>
+                </div>
+              ) : (
+                <button
+                  onClick={() => {
+                    window.location.href = authConnectUrl(p);
+                  }}
+                  className="mt-3 w-full rounded-lg bg-ember-500 px-3 py-2 text-sm font-bold text-navy-950 hover:bg-ember-400"
+                >
+                  Connect {label}
+                </button>
+              )}
+            </div>
+          );
+        })}
+      </div>
+      <p className="mt-3 text-xs text-slate-500">
+        The app is in Meta dev mode, so only approved testers can complete the
+        connection for now.
+      </p>
+    </section>
+  );
+}
 
 /** Instagram follow task: username entry -> bio-code -> bot verification. */
 function IgFollowBody({
@@ -478,6 +605,9 @@ export default function Tasks() {
           )
         )}
       </div>
+
+      {/* Linked accounts */}
+      <LinkedAccounts />
 
       {/* Hashtag posts */}
       {hashtagTask && (

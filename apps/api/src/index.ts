@@ -1,8 +1,10 @@
 import express from "express";
 import { config } from "./config.js";
+import { threadsConfigured, instagramConfigured } from "./meta.js";
 import { parseCookies } from "./cookies.js";
 import { SESSION_COOKIE } from "./session.js";
 import { authRouter } from "./routes/auth.js";
+import { linkedRouter } from "./routes/linked.js";
 import { tasksRouter } from "./routes/tasks.js";
 import { instagramRouter } from "./routes/instagram.js";
 import { locationRouter } from "./routes/location.js";
@@ -45,10 +47,13 @@ app.get("/api/health", (_req, res) => {
     cluster: config.solanaCluster,
     mintConfigured: Boolean(config.orvaMint),
     xConfigured: Boolean(config.xClientId),
+    threadsConfigured: threadsConfigured(),
+    instagramConfigured: instagramConfigured(),
   });
 });
 
 app.use("/api/auth", authRouter);
+app.use("/api/auth", linkedRouter);
 app.use("/api/tasks", tasksRouter);
 app.use("/api/instagram", instagramRouter);
 app.use("/api/location", locationRouter);
