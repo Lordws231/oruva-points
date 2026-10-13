@@ -25,6 +25,8 @@ export const FOLLOW_ORUVA_X = 2000;
 export const FOLLOW_FOUNDER_X = 2000;
 export const FOLLOW_FOUNDER_LINKEDIN = 2000;
 export const JOIN_DISCORD = 1000;
+export const FOLLOW_INSTAGRAM = 1000;
+export const FOLLOW_THREADS = 1000;
 export const LOCATION_PIN = 1500;
 /** Points per verified hashtag post. Edit this one constant to retune. */
 export const HASHTAG_POST = 100;
@@ -123,6 +125,20 @@ export function describeMilestone(m: EngagementMilestone): string {
   return `${main} and ${gate}`;
 }
 
+/**
+ * Instagram username rules: 1–30 chars of letters, numbers, "." and "_";
+ * no leading/trailing dot, no consecutive dots.
+ */
+export const IG_USERNAME_RE = /^[A-Za-z0-9._]{1,30}$/;
+export function isValidInstagramUsername(u: string): boolean {
+  return (
+    IG_USERNAME_RE.test(u) &&
+    !u.startsWith(".") &&
+    !u.endsWith(".") &&
+    !u.includes("..")
+  );
+}
+
 /** Campaign hashtags (matched case-insensitively). */
 export const CAMPAIGN_HASHTAGS = [
   "#Oruvatransport",
@@ -176,6 +192,24 @@ export const TASKS: TaskDef[] = [
     points: JOIN_DISCORD,
     repeatability: "once",
     url: "https://discord.gg/6G67trYsMw",
+  },
+  {
+    id: "FOLLOW_INSTAGRAM",
+    title: "Follow @oruvatransport on Instagram",
+    description:
+      "Follow the official Oruva Transportation Services page on Instagram, then enter your Instagram username below. Our bot checks that you follow the page, then gives you a code to add to your bio to prove the account is yours. 1,000 pts — one username can only earn this once.",
+    points: FOLLOW_INSTAGRAM,
+    repeatability: "once",
+    url: "https://www.instagram.com/oruvatransport/",
+  },
+  {
+    id: "FOLLOW_THREADS",
+    title: "Follow @oruvatransport on Threads",
+    description:
+      "Follow the official Oruva Transportation Services page on Threads. 1,000 pts — self-attested for now; automatic verification arrives with Threads account linking.",
+    points: FOLLOW_THREADS,
+    repeatability: "once",
+    url: "https://www.threads.com/@oruvatransport",
   },
   {
     id: "LOCATION_PIN",

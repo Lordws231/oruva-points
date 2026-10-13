@@ -40,4 +40,10 @@ export const config = {
   distributorSecretKey: process.env.DISTRIBUTOR_SECRET_KEY ?? "",
   /** Where unclaimed allocation goes after the claim window closes. */
   treasuryWallet: process.env.TREASURY_WALLET ?? "",
+
+  /**
+   * Shared secret for the Instagram follow-bot worker's admin endpoints
+   * (x-admin-key header). Empty = admin endpoints disabled.
+   */
+  adminKey: process.env.ADMIN_KEY ?? "",
 };

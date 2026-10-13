@@ -296,11 +296,12 @@ tasksRouter.post("/:id/complete", async (req: AuthedRequest, res) => {
     !def ||
     def.id === "LOCATION_PIN" ||
     def.id === "HASHTAG_POST" ||
+    def.id === "FOLLOW_INSTAGRAM" ||
     def.id.startsWith("ENG_")
   ) {
     res.status(404).json({
       error:
-        "unknown task (pins: POST /api/location; hashtag posts: POST /api/tasks/hashtag-post/complete; engagement: POST /api/tasks/engagement/complete)",
+        "unknown task (pins: POST /api/location; hashtag posts: POST /api/tasks/hashtag-post/complete; engagement: POST /api/tasks/engagement/complete; Instagram follow: POST /api/instagram/follow/start)",
     });
     return;
   }
@@ -312,14 +313,21 @@ tasksRouter.post("/:id/complete", async (req: AuthedRequest, res) => {
   const epoch = epochId();
   const body = (req.body ?? {}) as CompleteBody;
 
-  // Self-attested tasks (no public verification API): LinkedIn follow, Discord join.
-  if (taskId === "FOLLOW_FOUNDER_LINKEDIN" || taskId === "JOIN_DISCORD") {
+  // Self-attested tasks (no public verification API): LinkedIn follow,
+  // Discord join, Threads follow (until Threads account linking ships).
+  if (
+    taskId === "FOLLOW_FOUNDER_LINKEDIN" ||
+    taskId === "JOIN_DISCORD" ||
+    taskId === "FOLLOW_THREADS"
+  ) {
     if (body.confirm !== true) {
       res.status(400).json({
         error:
           taskId === "JOIN_DISCORD"
             ? "Discord joins can't be verified via API — send {confirm:true} to attest you joined the server."
-            : "LinkedIn follows can't be verified via API — send {confirm:true} to attest you followed.",
+            : taskId === "FOLLOW_THREADS"
+              ? "Threads follows aren't auto-verified yet — send {confirm:true} to attest you followed @oruvatransport."
+              : "LinkedIn follows can't be verified via API — send {confirm:true} to attest you followed.",
       });
       return;
     }
@@ -332,7 +340,9 @@ tasksRouter.post("/:id/complete", async (req: AuthedRequest, res) => {
       note:
         taskId === "JOIN_DISCORD"
           ? "Discord has no public join-verification API for this app; points awarded on self-attestation."
-          : "LinkedIn has no public follow-verification API; points awarded on self-attestation.",
+          : taskId === "FOLLOW_THREADS"
+            ? "Threads follow verification arrives with Threads account linking; points awarded on self-attestation for now."
+            : "LinkedIn has no public follow-verification API; points awarded on self-attestation.",
     });
     return;
   }

@@ -72,6 +72,31 @@ export const api = {
       body: JSON.stringify({ tweetUrl }),
     }),
 
+  instagramFollowStart: (username: string) =>
+    req<{
+      ok: boolean;
+      already?: boolean;
+      points?: number;
+      code?: string;
+      username?: string;
+      expiresInMinutes?: number;
+    }>("/api/instagram/follow/start", {
+      method: "POST",
+      body: JSON.stringify({ username }),
+    }),
+  instagramFollowVerify: () =>
+    req<{ ok: boolean; already?: boolean; status?: string }>(
+      "/api/instagram/follow/verify",
+      { method: "POST" }
+    ),
+  instagramFollowStatus: () =>
+    req<{
+      state: "none" | "pending" | "checking" | "done" | "failed" | "expired";
+      code?: string;
+      username?: string;
+      expiresAt?: string;
+    }>("/api/instagram/follow/status"),
+
   submitPin: (lat: number, lng: number, city?: string) =>
     req<{ ok: true; pin: Pin; points: number }>("/api/location", {
       method: "POST",

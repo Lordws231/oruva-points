@@ -4,6 +4,7 @@ import { parseCookies } from "./cookies.js";
 import { SESSION_COOKIE } from "./session.js";
 import { authRouter } from "./routes/auth.js";
 import { tasksRouter } from "./routes/tasks.js";
+import { instagramRouter } from "./routes/instagram.js";
 import { locationRouter } from "./routes/location.js";
 import { pointsRouter, leaderboardRouter, epochsRouter } from "./routes/stats.js";
 import { claimRouter } from "./routes/claim.js";
@@ -49,6 +50,7 @@ app.get("/api/health", (_req, res) => {
 
 app.use("/api/auth", authRouter);
 app.use("/api/tasks", tasksRouter);
+app.use("/api/instagram", instagramRouter);
 app.use("/api/location", locationRouter);
 app.use("/api/points", pointsRouter);
 app.use("/api/leaderboard", leaderboardRouter);

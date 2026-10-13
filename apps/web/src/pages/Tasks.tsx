@@ -36,6 +36,205 @@ type EngCheckResult =
     }
   | { kind: "pending"; message: string };
 
+/** Instagram follow task: username entry -> bio-code -> bot verification. */
+function IgFollowBody({
+  task,
+  refresh,
+}: {
+  task: TaskDef;
+  refresh: () => Promise<void>;
+}) {
+  const [username, setUsername] = useState("");
+  const [code, setCode] = useState<string | null>(null);
+  const [phase, setPhase] = useState<"idle" | "code" | "checking">("idle");
+  const [busy, setBusy] = useState(false);
+  const [msg, setMsg] = useState<string | null>(null);
+
+  // Resume a pending claim (e.g. user reloaded mid-flow).
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const s = await api.instagramFollowStatus();
+        if (cancelled) return;
+        if (s.state === "pending" && s.code) {
+          setCode(s.code);
+          if (s.username) setUsername(s.username);
+          setPhase("code");
+        } else if (s.state === "checking") {
+          setPhase("checking");
+        }
+      } catch {
+        /* no pending claim */
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  // Poll while the bot checks the bio.
+  useEffect(() => {
+    if (phase !== "checking") return;
+    const t = setInterval(async () => {
+      try {
+        const s = await api.instagramFollowStatus();
+        if (s.state === "done") {
+          clearInterval(t);
+          setPhase("idle");
+          setCode(null);
+          await refresh();
+        } else if (
+          s.state === "failed" ||
+          s.state === "expired" ||
+          s.state === "none"
+        ) {
+          clearInterval(t);
+          setPhase("idle");
+          setCode(null);
+          setMsg(
+            s.state === "failed"
+              ? "Verification didn't pass — start again for a fresh code."
+              : "Your code expired — start again for a fresh one."
+          );
+        }
+      } catch {
+        /* keep polling */
+      }
+    }, 15000);
+    return () => clearInterval(t);
+  }, [phase, refresh]);
+
+  async function start() {
+    setBusy(true);
+    setMsg(null);
+    try {
+      const r = await api.instagramFollowStart(username.trim());
+      if (r.already) {
+        await refresh();
+        return;
+      }
+      if (r.code) {
+        setCode(r.code);
+        setPhase("code");
+      }
+    } catch (e) {
+      setMsg(
+        e instanceof ApiError ? `Couldn't start: ${e.message}` : "Failed."
+      );
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function verify() {
+    setBusy(true);
+    setMsg(null);
+    try {
+      const r = await api.instagramFollowVerify();
+      if (r.already) {
+        await refresh();
+        return;
+      }
+      setPhase("checking");
+    } catch (e) {
+      setMsg(
+        e instanceof ApiError ? `Couldn't verify: ${e.message}` : "Failed."
+      );
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  function copyCode() {
+    if (code) navigator.clipboard?.writeText(code).catch(() => {});
+  }
+
+  return (
+    <>
+      <div className="flex items-start justify-between">
+        <h3 className="font-bold">{task.title}</h3>
+        <span className="rounded-full bg-navy-950 px-2.5 py-1 font-mono text-xs font-bold text-ember-400">
+          +{task.points.toLocaleString()}
+        </span>
+      </div>
+      <p className="mt-2 flex-1 text-sm text-slate-400">{task.description}</p>
+
+      {phase === "idle" && (
+        <>
+          {task.url && (
+            <a
+              href={task.url}
+              target="_blank"
+              rel="noreferrer"
+              className="mt-3 text-sm font-semibold text-ember-400 underline underline-offset-2"
+            >
+              1. Follow @oruvatransport on Instagram ↗
+            </a>
+          )}
+          <div className="mt-3 flex gap-2">
+            <input
+              value={username}
+              onChange={(e) => setUsername(e.target.value)}
+              placeholder="2. Your Instagram username"
+              autoCapitalize="none"
+              autoCorrect="off"
+              spellCheck={false}
+              className="min-w-0 flex-1 rounded-lg border border-navy-700 bg-navy-950 px-3 py-2 text-sm placeholder:text-slate-600 focus:border-ember-500 focus:outline-none"
+            />
+            <button
+              disabled={busy || !username.trim()}
+              onClick={start}
+              className="shrink-0 rounded-lg bg-ember-500 px-4 py-2 text-sm font-bold text-navy-950 disabled:opacity-50 hover:bg-ember-400"
+            >
+              {busy ? "Checking…" : "Get code"}
+            </button>
+          </div>
+        </>
+      )}
+
+      {phase === "code" && code && (
+        <div className="mt-4 space-y-3">
+          <div className="rounded-lg bg-navy-950 px-3 py-3 text-center">
+            <div className="text-xs text-slate-500">
+              3. Add this code anywhere in your Instagram bio
+            </div>
+            <div className="mt-1 font-mono text-2xl font-extrabold tracking-widest text-ember-400">
+              {code}
+            </div>
+            <button
+              onClick={copyCode}
+              className="mt-1 text-xs text-slate-400 underline underline-offset-2"
+            >
+              copy code
+            </button>
+          </div>
+          <button
+            disabled={busy}
+            onClick={verify}
+            className="w-full rounded-lg bg-ember-500 px-4 py-2 text-sm font-bold text-navy-950 disabled:opacity-50 hover:bg-ember-400"
+          >
+            {busy ? "Queuing…" : "4. I've added it — Verify"}
+          </button>
+          <p className="text-xs text-slate-500">
+            Code expires in 30 minutes. One Instagram username can only earn
+            this once — you can remove the code after verification.
+          </p>
+        </div>
+      )}
+
+      {phase === "checking" && (
+        <div className="mt-4 rounded-lg bg-navy-950 px-3 py-3 text-center text-sm text-slate-300">
+          Checking your bio… our bot usually confirms within a few minutes.
+          You can leave this page — the points land automatically.
+        </div>
+      )}
+
+      {msg && <p className="mt-3 text-xs text-amber-300">{msg}</p>}
+    </>
+  );
+}
+
 export default function Tasks() {
   const { user, loading, connectX } = useAuth();
   const [tasks, setTasks] = useState<TaskDef[]>([]);
@@ -214,57 +413,70 @@ export default function Tasks() {
 
       {/* Follow tasks */}
       <div className="grid gap-4 md:grid-cols-3">
-        {followTasks.map((t) => (
-          <div
-            key={t.id}
-            className="flex flex-col rounded-2xl border border-navy-700 bg-navy-900 p-5"
-          >
-            <div className="flex items-start justify-between">
-              <h3 className="font-bold">{t.title}</h3>
-              <span className="rounded-full bg-navy-950 px-2.5 py-1 font-mono text-xs font-bold text-ember-400">
-                +{t.points.toLocaleString()}
-              </span>
+        {followTasks.map((t) =>
+          t.id === "FOLLOW_INSTAGRAM" && !t.completed ? (
+            <div
+              key={t.id}
+              className="flex flex-col rounded-2xl border border-navy-700 bg-navy-900 p-5"
+            >
+              <IgFollowBody task={t} refresh={load} />
             </div>
-            <p className="mt-2 flex-1 text-sm text-slate-400">{t.description}</p>
-            {t.completed ? (
-              <div className="mt-4 rounded-lg bg-emerald-500/10 px-3 py-2 text-center text-sm font-semibold text-emerald-400">
-                ✓ Completed {t.verified ? "(verified)" : "(attested)"}
+          ) : (
+            <div
+              key={t.id}
+              className="flex flex-col rounded-2xl border border-navy-700 bg-navy-900 p-5"
+            >
+              <div className="flex items-start justify-between">
+                <h3 className="font-bold">{t.title}</h3>
+                <span className="rounded-full bg-navy-950 px-2.5 py-1 font-mono text-xs font-bold text-ember-400">
+                  +{t.points.toLocaleString()}
+                </span>
               </div>
-            ) : (
-              <div className="mt-4 flex gap-2">
-                {t.url && (
-                  <a
-                    href={t.url}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="flex-1 rounded-lg border border-navy-700 px-3 py-2 text-center text-sm font-semibold hover:border-ember-500"
+              <p className="mt-2 flex-1 text-sm text-slate-400">
+                {t.description}
+              </p>
+              {t.completed ? (
+                <div className="mt-4 rounded-lg bg-emerald-500/10 px-3 py-2 text-center text-sm font-semibold text-emerald-400">
+                  ✓ Completed {t.verified ? "(verified)" : "(attested)"}
+                </div>
+              ) : (
+                <div className="mt-4 flex gap-2">
+                  {t.url && (
+                    <a
+                      href={t.url}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="flex-1 rounded-lg border border-navy-700 px-3 py-2 text-center text-sm font-semibold hover:border-ember-500"
+                    >
+                      Open
+                    </a>
+                  )}
+                  <button
+                    disabled={busy === t.id}
+                    onClick={() =>
+                      complete(
+                        t.id,
+                        t.id === "FOLLOW_FOUNDER_LINKEDIN" ||
+                          t.id === "JOIN_DISCORD" ||
+                          t.id === "FOLLOW_THREADS"
+                      )
+                    }
+                    className="flex-1 rounded-lg bg-ember-500 px-3 py-2 text-sm font-bold text-navy-950 disabled:opacity-50 hover:bg-ember-400"
                   >
-                    Open
-                  </a>
-                )}
-                <button
-                  disabled={busy === t.id}
-                  onClick={() =>
-                    complete(
-                      t.id,
-                      t.id === "FOLLOW_FOUNDER_LINKEDIN" ||
-                        t.id === "JOIN_DISCORD"
-                    )
-                  }
-                  className="flex-1 rounded-lg bg-ember-500 px-3 py-2 text-sm font-bold text-navy-950 disabled:opacity-50 hover:bg-ember-400"
-                >
-                  {busy === t.id
-                    ? "Verifying…"
-                    : t.id === "FOLLOW_FOUNDER_LINKEDIN"
-                      ? "I followed ✓"
-                      : t.id === "JOIN_DISCORD"
-                        ? "I joined ✓"
-                        : "Verify follow"}
-                </button>
-              </div>
-            )}
-          </div>
-        ))}
+                    {busy === t.id
+                      ? "Verifying…"
+                      : t.id === "FOLLOW_FOUNDER_LINKEDIN" ||
+                          t.id === "FOLLOW_THREADS"
+                        ? "I followed ✓"
+                        : t.id === "JOIN_DISCORD"
+                          ? "I joined ✓"
+                          : "Verify follow"}
+                  </button>
+                </div>
+              )}
+            </div>
+          )
+        )}
       </div>
 
       {/* Hashtag posts */}

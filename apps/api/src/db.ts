@@ -58,6 +58,32 @@ db.exec(`
     claimed_at TEXT NOT NULL DEFAULT (datetime('now')),
     PRIMARY KEY (x_user_id, epoch)
   );
+  -- Instagram follow bot: cached follower snapshot of @oruvatransport,
+  -- globally-claimed usernames (one username earns FOLLOW_INSTAGRAM once,
+  -- first-come), and pending bio-code ownership checks.
+  CREATE TABLE IF NOT EXISTS ig_followers_snapshot (
+    username   TEXT PRIMARY KEY,
+    fetched_at TEXT NOT NULL DEFAULT (datetime('now'))
+  );
+  CREATE TABLE IF NOT EXISTS ig_snapshot_meta (
+    id             INTEGER PRIMARY KEY CHECK (id = 1),
+    fetched_at     TEXT NOT NULL DEFAULT (datetime('now')),
+    follower_count INTEGER NOT NULL DEFAULT 0
+  );
+  CREATE TABLE IF NOT EXISTS instagram_follows (
+    username    TEXT PRIMARY KEY,
+    x_user_id   TEXT NOT NULL REFERENCES users(x_user_id),
+    verified_at TEXT NOT NULL DEFAULT (datetime('now'))
+  );
+  CREATE TABLE IF NOT EXISTS instagram_pending (
+    x_user_id  TEXT PRIMARY KEY REFERENCES users(x_user_id),
+    username   TEXT NOT NULL,
+    code       TEXT NOT NULL,
+    status     TEXT NOT NULL DEFAULT 'pending',
+    expires_at TEXT NOT NULL,
+    attempts   INTEGER NOT NULL DEFAULT 0,
+    created_at TEXT NOT NULL DEFAULT (datetime('now'))
+  );
 `);
 
 // ---------------------------------------------------------------- helpers
@@ -461,6 +487,146 @@ export function seasonLeaderboard(
     )
     .all(...ids, limit);
   return asRows<LeaderRow>(r);
+}
+
+// ---------------------------------------------------------------- instagram follow bot
+
+export interface IgSnapshotMeta {
+  fetched_at: string;
+  follower_count: number;
+}
+
+/** Replace the cached @oruvatransport follower snapshot (worker-driven). */
+export function replaceFollowerSnapshot(usernames: string[]): void {
+  const now = new Date().toISOString();
+  db.exec("BEGIN IMMEDIATE");
+  try {
+    db.prepare(`DELETE FROM ig_followers_snapshot`).run();
+    const ins = db.prepare(
+      `INSERT OR IGNORE INTO ig_followers_snapshot (username, fetched_at) VALUES (?, ?)`
+    );
+    for (const u of usernames) ins.run(u.toLowerCase(), now);
+    db.prepare(
+      `INSERT INTO ig_snapshot_meta (id, fetched_at, follower_count)
+       VALUES (1, ?, ?)
+       ON CONFLICT(id) DO UPDATE SET fetched_at = excluded.fetched_at,
+                                     follower_count = excluded.follower_count`
+    ).run(now, usernames.length);
+    db.exec("COMMIT");
+  } catch (err) {
+    db.exec("ROLLBACK");
+    throw err;
+  }
+}
+
+export function getSnapshotMeta(): IgSnapshotMeta | undefined {
+  const r = db
+    .prepare(`SELECT fetched_at, follower_count FROM ig_snapshot_meta WHERE id = 1`)
+    .get();
+  return asRow<IgSnapshotMeta>(r);
+}
+
+/** True if the (lowercased) username is in the cached follower snapshot. */
+export function isSnapshotFollower(username: string): boolean {
+  const r = db
+    .prepare(`SELECT 1 FROM ig_followers_snapshot WHERE username = ? LIMIT 1`)
+    .get(username.toLowerCase());
+  return r !== undefined;
+}
+
+/** True if this Instagram username already earned FOLLOW_INSTAGRAM (global). */
+export function isInstagramUsernameClaimed(username: string): boolean {
+  const r = db
+    .prepare(`SELECT 1 FROM instagram_follows WHERE username = ? LIMIT 1`)
+    .get(username.toLowerCase());
+  return r !== undefined;
+}
+
+/**
+ * Record a verified Instagram follow. Returns false if the username was
+ * already claimed (first-come wins — enforced at the DB level).
+ */
+export function claimInstagramUsername(
+  username: string,
+  xUserId: string
+): boolean {
+  const res = db
+    .prepare(
+      `INSERT OR IGNORE INTO instagram_follows (username, x_user_id)
+       VALUES (?, ?)`
+    )
+    .run(username.toLowerCase(), xUserId);
+  return Number(res.changes) === 1;
+}
+
+export interface IgPendingRow {
+  x_user_id: string;
+  username: string;
+  code: string;
+  status: string;
+  expires_at: string;
+  attempts: number;
+  created_at: string;
+}
+
+export function createInstagramPending(
+  xUserId: string,
+  username: string,
+  code: string,
+  expiresAt: string
+): void {
+  db.prepare(
+    `INSERT INTO instagram_pending (x_user_id, username, code, status, expires_at, attempts)
+     VALUES (?, ?, ?, 'pending', ?, 0)
+     ON CONFLICT(x_user_id) DO UPDATE SET
+       username = excluded.username,
+       code = excluded.code,
+       status = 'pending',
+       expires_at = excluded.expires_at,
+       attempts = 0,
+       created_at = datetime('now')`
+  ).run(xUserId, username.toLowerCase(), code, expiresAt);
+}
+
+export function getInstagramPending(
+  xUserId: string
+): IgPendingRow | undefined {
+  const r = db
+    .prepare(`SELECT * FROM instagram_pending WHERE x_user_id = ?`)
+    .get(xUserId);
+  return asRow<IgPendingRow>(r);
+}
+
+export function setInstagramPendingStatus(
+  xUserId: string,
+  status: string
+): void {
+  db.prepare(
+    `UPDATE instagram_pending SET status = ? WHERE x_user_id = ?`
+  ).run(status, xUserId);
+}
+
+export function bumpInstagramPendingAttempts(xUserId: string): number {
+  db.prepare(
+    `UPDATE instagram_pending SET attempts = attempts + 1 WHERE x_user_id = ?`
+  ).run(xUserId);
+  return getInstagramPending(xUserId)?.attempts ?? 0;
+}
+
+export function deleteInstagramPending(xUserId: string): void {
+  db.prepare(`DELETE FROM instagram_pending WHERE x_user_id = ?`).run(xUserId);
+}
+
+/** Pending bio-code checks ready for the worker (awaiting, unexpired). */
+export function listAwaitingInstagramChecks(): IgPendingRow[] {
+  const r = db
+    .prepare(
+      `SELECT * FROM instagram_pending
+       WHERE status = 'awaiting_check' AND datetime(expires_at) > datetime('now')
+       ORDER BY created_at ASC`
+    )
+    .all();
+  return asRows<IgPendingRow>(r);
 }
 
 // ---------------------------------------------------------------- leaderboard
