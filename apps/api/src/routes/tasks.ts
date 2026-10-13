@@ -312,11 +312,14 @@ tasksRouter.post("/:id/complete", async (req: AuthedRequest, res) => {
   const epoch = epochId();
   const body = (req.body ?? {}) as CompleteBody;
 
-  if (taskId === "FOLLOW_FOUNDER_LINKEDIN") {
+  // Self-attested tasks (no public verification API): LinkedIn follow, Discord join.
+  if (taskId === "FOLLOW_FOUNDER_LINKEDIN" || taskId === "JOIN_DISCORD") {
     if (body.confirm !== true) {
       res.status(400).json({
         error:
-          "LinkedIn follows can't be verified via API — send {confirm:true} to attest you followed.",
+          taskId === "JOIN_DISCORD"
+            ? "Discord joins can't be verified via API — send {confirm:true} to attest you joined the server."
+            : "LinkedIn follows can't be verified via API — send {confirm:true} to attest you followed.",
       });
       return;
     }
@@ -326,7 +329,10 @@ tasksRouter.post("/:id/complete", async (req: AuthedRequest, res) => {
       points: def.points,
       verified: false,
       attested: true,
-      note: "LinkedIn has no public follow-verification API; points awarded on self-attestation.",
+      note:
+        taskId === "JOIN_DISCORD"
+          ? "Discord has no public join-verification API for this app; points awarded on self-attestation."
+          : "LinkedIn has no public follow-verification API; points awarded on self-attestation.",
     });
     return;
   }

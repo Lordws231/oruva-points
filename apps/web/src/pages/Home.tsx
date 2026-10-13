@@ -17,7 +17,7 @@ const STEPS = [
   {
     n: 2,
     title: "Complete tasks",
-    text: "Follow @Oruvatransport, follow the founder on X and LinkedIn, post on X with the campaign hashtags, hit engagement milestones on your posts, and share live area location pinpoints.",
+    text: "Follow @Oruvatransport, follow the founder on X and LinkedIn, join the Oruva Discord server, post on X with the campaign hashtags, hit engagement milestones on your posts, and share live area location pinpoints.",
   },
   {
     n: 3,
@@ -44,6 +44,7 @@ const POINT_GROUPS: { heading: string | null; rows: PointRow[] }[] = [
       { task: "Follow @Oruvatransport on X", pts: "2,000", freq: "one-time" },
       { task: "Follow founder @AbiodunOyaniyi on X", pts: "2,000", freq: "one-time" },
       { task: "Follow founder on LinkedIn", pts: "2,000", freq: "one-time" },
+      { task: "Join the Oruva Discord server", pts: "1,000", freq: "one-time" },
       { task: "Post on X with campaign hashtags", pts: "100", freq: "repeatable · unlimited" },
       { task: "Share live area location pinpoint", pts: "1,500", freq: "repeatable · up to 10/day" },
     ],
@@ -67,6 +68,7 @@ function Calculator() {
   const [f1, setF1] = useState(true);
   const [f2, setF2] = useState(true);
   const [f3, setF3] = useState(false);
+  const [f4, setF4] = useState(false);
   const [posts, setPosts] = useState(20);
   const [pins, setPins] = useState(7);
   const [milestones, setMilestones] = useState<Record<string, boolean>>({});
@@ -79,6 +81,7 @@ function Calculator() {
     (f1 ? 2000 : 0) +
     (f2 ? 2000 : 0) +
     (f3 ? 2000 : 0) +
+    (f4 ? 1000 : 0) +
     posts * 100 +
     pins * 1500 +
     milestonePoints;
@@ -95,6 +98,7 @@ function Calculator() {
           { label: "Follow @Oruvatransport (+2,000)", v: f1, s: setF1 },
           { label: "Follow founder on X (+2,000)", v: f2, s: setF2 },
           { label: "Follow founder on LinkedIn (+2,000)", v: f3, s: setF3 },
+          { label: "Join the Oruva Discord server (+1,000)", v: f4, s: setF4 },
         ].map((r) => (
           <label key={r.label} className="flex cursor-pointer items-center gap-3">
             <input

@@ -245,7 +245,11 @@ export default function Tasks() {
                 <button
                   disabled={busy === t.id}
                   onClick={() =>
-                    complete(t.id, t.id === "FOLLOW_FOUNDER_LINKEDIN")
+                    complete(
+                      t.id,
+                      t.id === "FOLLOW_FOUNDER_LINKEDIN" ||
+                        t.id === "JOIN_DISCORD"
+                    )
                   }
                   className="flex-1 rounded-lg bg-ember-500 px-3 py-2 text-sm font-bold text-navy-950 disabled:opacity-50 hover:bg-ember-400"
                 >
@@ -253,7 +257,9 @@ export default function Tasks() {
                     ? "Verifying…"
                     : t.id === "FOLLOW_FOUNDER_LINKEDIN"
                       ? "I followed ✓"
-                      : "Verify follow"}
+                      : t.id === "JOIN_DISCORD"
+                        ? "I joined ✓"
+                        : "Verify follow"}
                 </button>
               </div>
             )}

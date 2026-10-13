@@ -24,6 +24,7 @@ export interface TaskDef {
 export const FOLLOW_ORUVA_X = 2000;
 export const FOLLOW_FOUNDER_X = 2000;
 export const FOLLOW_FOUNDER_LINKEDIN = 2000;
+export const JOIN_DISCORD = 1000;
 export const LOCATION_PIN = 1500;
 /** Points per verified hashtag post. Edit this one constant to retune. */
 export const HASHTAG_POST = 100;
@@ -166,6 +167,15 @@ export const TASKS: TaskDef[] = [
     points: FOLLOW_FOUNDER_LINKEDIN,
     repeatability: "once",
     url: "https://www.linkedin.com/in/abiodun-oyaniyi-6aab0a253",
+  },
+  {
+    id: "JOIN_DISCORD",
+    title: "Join the Oruva Discord server",
+    description:
+      "Join the official Oruva Transportation Services Discord community — announcements, ORVA leaderboard, polls, and support.",
+    points: JOIN_DISCORD,
+    repeatability: "once",
+    url: "https://discord.gg/6G67trYsMw",
   },
   {
     id: "LOCATION_PIN",
