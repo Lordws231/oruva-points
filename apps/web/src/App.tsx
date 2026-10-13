@@ -10,6 +10,7 @@ import {
 import { clusterApiUrl } from "@solana/web3.js";
 import { useMemo } from "react";
 import { BrowserRouter, Route, Routes } from "react-router-dom";
+import { Analytics } from "@vercel/analytics/react";
 import "@solana/wallet-adapter-react-ui/styles.css";
 import "./index.css";
 import { AuthProvider } from "./lib/auth";
@@ -56,6 +57,7 @@ export default function App() {
                 </Route>
               </Routes>
             </BrowserRouter>
+            <Analytics />
           </AuthProvider>
         </WalletModalProvider>
       </WalletProvider>
