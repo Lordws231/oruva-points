@@ -57,9 +57,9 @@ function LinkedAccounts() {
     const params = new URLSearchParams(window.location.search);
     const linked = params.get("linked");
     const err = params.get("link_error");
-    if (linked === "threads" || linked === "instagram") {
+    if (linked === "threads" || linked === "instagram" || linked === "facebook") {
       setNote(
-        `✓ ${linked === "threads" ? "Threads" : "Instagram"} account connected.`
+        `✓ ${linked === "threads" ? "Threads" : linked === "facebook" ? "Facebook" : "Instagram"} account connected.`
       );
     } else if (err) {
       setNote(
@@ -80,7 +80,7 @@ function LinkedAccounts() {
     }
   }, [load]);
 
-  async function disconnect(provider: "instagram" | "threads") {
+  async function disconnect(provider: "instagram" | "threads" | "facebook") {
     setBusy(provider);
     try {
       await api.disconnectLinked(provider);
@@ -92,25 +92,27 @@ function LinkedAccounts() {
     }
   }
 
-  const byProvider = (p: "instagram" | "threads") =>
+  const byProvider = (p: "instagram" | "threads" | "facebook") =>
     accounts.find((a) => a.provider === p);
 
   return (
     <section className="rounded-2xl border border-navy-700 bg-navy-900 p-6">
       <h2 className="text-xl font-bold">Linked accounts</h2>
       <p className="mt-1 text-sm text-slate-400">
-        Connect your Instagram and Threads accounts to unlock verified social
-        tasks. You stay signed in here — this only links the accounts.
+        Connect your Instagram, Threads and Facebook accounts to unlock
+        verified social tasks. Facebook linking is how we verify your Page
+        follow before points are awarded. You stay signed in here — this
+        only links the accounts.
       </p>
       {note && (
         <div className="mt-3 rounded-lg border border-navy-700 bg-navy-950 px-3 py-2 text-sm">
           {note}
         </div>
       )}
-      <div className="mt-4 grid gap-4 md:grid-cols-2">
-        {(["instagram", "threads"] as const).map((p) => {
+      <div className="mt-4 grid gap-4 md:grid-cols-3">
+        {(["instagram", "threads", "facebook"] as const).map((p) => {
           const acc = byProvider(p);
-          const label = p === "instagram" ? "Instagram" : "Threads";
+          const label = p === "instagram" ? "Instagram" : p === "facebook" ? "Facebook" : "Threads";
           return (
             <div
               key={p}
@@ -131,7 +133,7 @@ function LinkedAccounts() {
               {acc ? (
                 <div className="mt-3 flex items-center justify-between gap-2">
                   <span className="truncate text-sm text-slate-300">
-                    @{acc.username}
+                    {p === "facebook" ? acc.username : `@${acc.username}`}
                   </span>
                   <button
                     disabled={busy === p}
@@ -156,8 +158,8 @@ function LinkedAccounts() {
         })}
       </div>
       <p className="mt-3 text-xs text-slate-500">
-        The app is in Meta dev mode, so only approved testers can complete the
-        connection for now.
+        The Meta app must be approved for the Facebook user_likes permission
+        before public users can complete the Facebook connection.
       </p>
     </section>
   );
@@ -294,7 +296,7 @@ function IgFollowBody({
               href={task.url}
               target="_blank"
               rel="noreferrer"
-              className="mt-3 text-sm font-semibold text-ember-400 underline underline-offset-2"
+              className="mt-3 inline-flex w-fit items-center justify-center gap-2 rounded-xl bg-ember-500 px-4 py-2.5 text-sm font-bold text-navy-950 shadow transition hover:bg-ember-400 active:scale-[0.99]"
             >
               1. Follow @oruvatransport on Instagram ↗
             </a>
@@ -357,6 +359,316 @@ function IgFollowBody({
         </div>
       )}
 
+      {msg && <p className="mt-3 text-xs text-amber-300">{msg}</p>}
+    </>
+  );
+}
+
+
+/**
+ * Threads + LinkedIn follow tasks: verification-bot code flow.
+ * Enter identity → bot confirms the follow → add the one-time code to
+ * your profile → bot verifies the code → points land. No self-attestation.
+ */
+function SocialFollowBody({
+  task,
+  refresh,
+}: {
+  task: TaskDef;
+  refresh: () => Promise<void>;
+}) {
+  const isThreads = task.id === "FOLLOW_THREADS";
+  const [identity, setIdentity] = useState("");
+  const [code, setCode] = useState<string | null>(null);
+  const [codeTarget, setCodeTarget] = useState<string>(
+    isThreads ? "Threads bio" : "LinkedIn About section"
+  );
+  const [phase, setPhase] = useState<"idle" | "code" | "checking">("idle");
+  const [busy, setBusy] = useState(false);
+  const [msg, setMsg] = useState<string | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const s = await api.socialStatus(task.id);
+        if (cancelled) return;
+        if (s.state === "pending" && s.code) {
+          setCode(s.code);
+          if (s.username) setIdentity(s.username);
+          setPhase("code");
+        } else if (s.state === "checking") {
+          setPhase("checking");
+        }
+      } catch {
+        /* no pending claim */
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [task.id]);
+
+  useEffect(() => {
+    if (phase !== "checking") return;
+    const t = setInterval(async () => {
+      try {
+        const s = await api.socialStatus(task.id);
+        if (s.state === "done") {
+          clearInterval(t);
+          setPhase("idle");
+          setCode(null);
+          await refresh();
+        } else if (s.state === "failed" || s.state === "expired" || s.state === "none") {
+          clearInterval(t);
+          setPhase("idle");
+          setCode(null);
+          setMsg(
+            s.state === "failed"
+              ? "Verification didn't pass — start again for a fresh code."
+              : "Your code expired — start again for a fresh one."
+          );
+        }
+      } catch {
+        /* keep polling */
+      }
+    }, 15000);
+    return () => clearInterval(t);
+  }, [phase, refresh, task.id]);
+
+  async function start() {
+    setBusy(true);
+    setMsg(null);
+    try {
+      const r = await api.socialStart(
+        task.id,
+        isThreads
+          ? { username: identity.trim() }
+          : { profileUrl: identity.trim() }
+      );
+      if (r.already) {
+        await refresh();
+        return;
+      }
+      if (r.code) {
+        setCode(r.code);
+        if (r.codeTarget) setCodeTarget(r.codeTarget);
+        setPhase("code");
+      }
+    } catch (e) {
+      setMsg(e instanceof ApiError ? `Couldn't start: ${e.message}` : "Failed.");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function verify() {
+    setBusy(true);
+    setMsg(null);
+    try {
+      const r = await api.socialVerify(task.id);
+      if (r.already) {
+        await refresh();
+        return;
+      }
+      setPhase("checking");
+    } catch (e) {
+      setMsg(e instanceof ApiError ? `Couldn't verify: ${e.message}` : "Failed.");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  function copyCode() {
+    if (code) navigator.clipboard?.writeText(code).catch(() => {});
+  }
+
+  return (
+    <>
+      <div className="flex items-start justify-between">
+        <h3 className="font-bold">{task.title}</h3>
+        <span className="rounded-full bg-navy-950 px-2.5 py-1 font-mono text-xs font-bold text-ember-400">
+          +{task.points.toLocaleString()}
+        </span>
+      </div>
+      <p className="mt-2 flex-1 text-sm text-slate-400">{task.description}</p>
+
+      {phase === "idle" && (
+        <>
+          {task.url && (
+            <a
+              href={task.url}
+              target="_blank"
+              rel="noreferrer"
+              className="mt-3 inline-flex w-fit items-center justify-center gap-2 rounded-xl bg-ember-500 px-4 py-2.5 text-sm font-bold text-navy-950 shadow transition hover:bg-ember-400 active:scale-[0.99]"
+            >
+              {isThreads
+                ? "1. Follow @Oruvatransport on Threads ↗"
+                : task.id === "FOLLOW_ORUVA_LINKEDIN"
+                  ? "1. Follow Oruva Transportation Services on LinkedIn ↗"
+                  : "1. Follow the founder on LinkedIn ↗"}
+            </a>
+          )}
+          <div className="mt-3 flex gap-2">
+            <input
+              value={identity}
+              onChange={(e) => setIdentity(e.target.value)}
+              placeholder={
+                isThreads
+                  ? "2. Your Threads username"
+                  : "2. Your LinkedIn profile URL"
+              }
+              autoCapitalize="none"
+              autoCorrect="off"
+              spellCheck={false}
+              className="min-w-0 flex-1 rounded-lg border border-navy-700 bg-navy-950 px-3 py-2 text-sm placeholder:text-slate-600 focus:border-ember-500 focus:outline-none"
+            />
+            <button
+              disabled={busy || !identity.trim()}
+              onClick={start}
+              className="shrink-0 rounded-lg bg-ember-500 px-4 py-2 text-sm font-bold text-navy-950 disabled:opacity-50 hover:bg-ember-400"
+            >
+              {busy ? "Checking…" : "Get code"}
+            </button>
+          </div>
+        </>
+      )}
+
+      {phase === "code" && code && (
+        <div className="mt-4 space-y-3">
+          <div className="rounded-lg bg-navy-950 px-3 py-3 text-center">
+            <div className="text-xs text-slate-500">
+              3. Add this code anywhere in your {codeTarget}
+            </div>
+            <div className="mt-1 font-mono text-2xl font-extrabold tracking-widest text-ember-400">
+              {code}
+            </div>
+            <button
+              onClick={copyCode}
+              className="mt-1 text-xs text-slate-400 underline underline-offset-2"
+            >
+              copy code
+            </button>
+          </div>
+          <button
+            disabled={busy}
+            onClick={verify}
+            className="w-full rounded-lg bg-ember-500 px-4 py-2 text-sm font-bold text-navy-950 disabled:opacity-50 hover:bg-ember-400"
+          >
+            {busy ? "Queuing…" : "4. I've added it — Verify"}
+          </button>
+          <p className="text-xs text-slate-500">
+            Code expires in 30 minutes. Points are awarded only after our
+            verification bot confirms your follow and this code — you can
+            remove the code after verification.
+          </p>
+        </div>
+      )}
+
+      {phase === "checking" && (
+        <div className="mt-4 rounded-lg bg-navy-950 px-3 py-3 text-center text-sm text-slate-300">
+          Verifying… our bot usually confirms within a few minutes. You can
+          leave this page — the points land automatically once verified.
+        </div>
+      )}
+
+      {msg && <p className="mt-3 text-xs text-amber-300">{msg}</p>}
+    </>
+  );
+}
+
+/**
+ * Facebook follow task: connect Facebook, then a live Graph API check
+ * (GET /me/likes/<page>) runs before any points are awarded.
+ */
+function FacebookFollowBody({
+  task,
+  refresh,
+}: {
+  task: TaskDef;
+  refresh: () => Promise<void>;
+}) {
+  const [linkedName, setLinkedName] = useState<string | null>(null);
+  const [busy, setBusy] = useState(false);
+  const [msg, setMsg] = useState<string | null>(null);
+
+  const loadLinked = useCallback(async () => {
+    try {
+      const r = await api.linked();
+      const fb = r.accounts.find((a) => a.provider === "facebook");
+      setLinkedName(fb ? fb.username : null);
+    } catch {
+      /* not linked */
+    }
+  }, []);
+
+  useEffect(() => {
+    loadLinked();
+  }, [loadLinked]);
+
+  async function verify() {
+    setBusy(true);
+    setMsg(null);
+    try {
+      const r = await api.facebookVerify();
+      if (r.ok) {
+        setMsg(
+          r.already
+            ? "Already completed — points were awarded earlier."
+            : `Verified ✓ +${r.points?.toLocaleString()} pts earned.`
+        );
+        await refresh();
+      }
+    } catch (e) {
+      setMsg(e instanceof ApiError ? e.message : "Verification failed.");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <>
+      <div className="flex items-start justify-between">
+        <h3 className="font-bold">{task.title}</h3>
+        <span className="rounded-full bg-navy-950 px-2.5 py-1 font-mono text-xs font-bold text-ember-400">
+          +{task.points.toLocaleString()}
+        </span>
+      </div>
+      <p className="mt-2 flex-1 text-sm text-slate-400">{task.description}</p>
+      {task.url && (
+        <a
+          href={task.url}
+          target="_blank"
+          rel="noreferrer"
+          className="mt-3 inline-flex w-fit items-center justify-center gap-2 rounded-xl bg-ember-500 px-4 py-2.5 text-sm font-bold text-navy-950 shadow transition hover:bg-ember-400 active:scale-[0.99]"
+        >
+          1. Follow @Oruvatransport on Facebook ↗
+        </a>
+      )}
+      {linkedName ? (
+        <>
+          <p className="mt-3 text-xs text-slate-500">
+            Facebook connected as {linkedName}. We check your followed Pages
+            with Facebook before awarding points.
+          </p>
+          <button
+            disabled={busy}
+            onClick={verify}
+            className="mt-3 w-full rounded-lg bg-ember-500 px-4 py-2 text-sm font-bold text-navy-950 disabled:opacity-50 hover:bg-ember-400"
+          >
+            {busy ? "Checking with Facebook…" : "2. Verify follow"}
+          </button>
+        </>
+      ) : (
+        <button
+          onClick={() => {
+            window.location.href = authConnectUrl("facebook");
+          }}
+          className="mt-4 w-full rounded-lg bg-ember-500 px-4 py-2 text-sm font-bold text-navy-950 hover:bg-ember-400"
+        >
+          2. Connect Facebook to verify
+        </button>
+      )}
       {msg && <p className="mt-3 text-xs text-amber-300">{msg}</p>}
     </>
   );
@@ -541,7 +853,24 @@ export default function Tasks() {
       {/* Follow tasks */}
       <div className="grid gap-4 md:grid-cols-3">
         {followTasks.map((t) =>
-          t.id === "FOLLOW_INSTAGRAM" && !t.completed ? (
+          (t.id === "FOLLOW_THREADS" ||
+            t.id === "FOLLOW_FOUNDER_LINKEDIN" ||
+            t.id === "FOLLOW_ORUVA_LINKEDIN") &&
+          !t.completed ? (
+            <div
+              key={t.id}
+              className="flex flex-col rounded-2xl border border-navy-700 bg-navy-900 p-5"
+            >
+              <SocialFollowBody task={t} refresh={load} />
+            </div>
+          ) : t.id === "FOLLOW_FACEBOOK" && !t.completed ? (
+            <div
+              key={t.id}
+              className="flex flex-col rounded-2xl border border-navy-700 bg-navy-900 p-5"
+            >
+              <FacebookFollowBody task={t} refresh={load} />
+            </div>
+          ) : t.id === "FOLLOW_INSTAGRAM" && !t.completed ? (
             <div
               key={t.id}
               className="flex flex-col rounded-2xl border border-navy-700 bg-navy-900 p-5"
@@ -573,31 +902,21 @@ export default function Tasks() {
                       href={t.url}
                       target="_blank"
                       rel="noreferrer"
-                      className="flex-1 rounded-lg border border-navy-700 px-3 py-2 text-center text-sm font-semibold hover:border-ember-500"
+                      className="flex-1 rounded-lg border border-ember-500/60 bg-ember-500/10 px-3 py-2 text-center text-sm font-bold text-ember-400 shadow-sm transition hover:bg-ember-500 hover:text-navy-950 active:scale-[0.99]"
                     >
-                      Open
+                      Open official page ↗
                     </a>
                   )}
                   <button
                     disabled={busy === t.id}
-                    onClick={() =>
-                      complete(
-                        t.id,
-                        t.id === "FOLLOW_FOUNDER_LINKEDIN" ||
-                          t.id === "JOIN_DISCORD" ||
-                          t.id === "FOLLOW_THREADS"
-                      )
-                    }
+                    onClick={() => complete(t.id, t.id === "JOIN_DISCORD")}
                     className="flex-1 rounded-lg bg-ember-500 px-3 py-2 text-sm font-bold text-navy-950 disabled:opacity-50 hover:bg-ember-400"
                   >
                     {busy === t.id
                       ? "Verifying…"
-                      : t.id === "FOLLOW_FOUNDER_LINKEDIN" ||
-                          t.id === "FOLLOW_THREADS"
-                        ? "I followed ✓"
-                        : t.id === "JOIN_DISCORD"
-                          ? "I joined ✓"
-                          : "Verify follow"}
+                      : t.id === "JOIN_DISCORD"
+                        ? "I joined ✓"
+                        : "Verify follow"}
                   </button>
                 </div>
               )}

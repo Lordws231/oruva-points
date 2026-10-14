@@ -21,12 +21,14 @@ export interface TaskDef {
   url?: string;
 }
 
-export const FOLLOW_ORUVA_X = 2000;
-export const FOLLOW_FOUNDER_X = 2000;
-export const FOLLOW_FOUNDER_LINKEDIN = 2000;
+export const FOLLOW_ORUVA_X = 1000;
+export const FOLLOW_FOUNDER_X = 1000;
+export const FOLLOW_FOUNDER_LINKEDIN = 1000;
+export const FOLLOW_ORUVA_LINKEDIN = 1000;
 export const JOIN_DISCORD = 1000;
 export const FOLLOW_INSTAGRAM = 1000;
 export const FOLLOW_THREADS = 1000;
+export const FOLLOW_FACEBOOK = 1000;
 export const LOCATION_PIN = 1500;
 /** Points per verified hashtag post. Edit this one constant to retune. */
 export const HASHTAG_POST = 100;
@@ -139,6 +141,33 @@ export function isValidInstagramUsername(u: string): boolean {
   );
 }
 
+/**
+ * LinkedIn personal-profile URL → vanity slug, e.g.
+ * "https://www.linkedin.com/in/abiodun-oyaniyi-6aab0a253/" → the slug.
+ * Returns null for anything that is not a /in/<slug> profile URL.
+ * Used by the LinkedIn follow-verification flow (ownership + follow are
+ * confirmed against the founder's follower list before points award).
+ */
+export function linkedInSlugFromUrl(raw: string): string | null {
+  let u: URL;
+  try {
+    u = new URL(raw.trim());
+  } catch {
+    return null;
+  }
+  if (!/(^|\.)linkedin\.com$/i.test(u.hostname)) return null;
+  const m = /^\/in\/([A-Za-z0-9][A-Za-z0-9\-_%.]*)\/?$/.exec(u.pathname);
+  if (!m) return null;
+  let slug = m[1];
+  try {
+    slug = decodeURIComponent(slug);
+  } catch {
+    /* keep raw */
+  }
+  slug = slug.toLowerCase();
+  return slug.length >= 3 && slug.length <= 100 ? slug : null;
+}
+
 /** Campaign hashtags (matched case-insensitively). */
 export const CAMPAIGN_HASHTAGS = [
   "#Oruvatransport",
@@ -179,10 +208,19 @@ export const TASKS: TaskDef[] = [
     id: "FOLLOW_FOUNDER_LINKEDIN",
     title: "Follow founder on LinkedIn",
     description:
-      "Connect with / follow the founder of Oruva Transportation Services on LinkedIn.",
+      "Follow the founder of Oruva Transportation Services on LinkedIn, then enter your LinkedIn profile URL below. Points are awarded only after verification — our verification bot checks the founder's follower list and the one-time code you add to your LinkedIn About section. No verification, no points.",
     points: FOLLOW_FOUNDER_LINKEDIN,
     repeatability: "once",
     url: "https://www.linkedin.com/in/abiodun-oyaniyi-6aab0a253",
+  },
+  {
+    id: "FOLLOW_ORUVA_LINKEDIN",
+    title: "Follow Oruva Transportation Services on LinkedIn",
+    description:
+      "Follow the official Oruva Transportation Services company Page on LinkedIn, then enter your LinkedIn profile URL below. Points are awarded only after verification — the Page admin's follower list and the one-time code you add to your LinkedIn About section are checked first. No verification, no points.",
+    points: FOLLOW_ORUVA_LINKEDIN,
+    repeatability: "once",
+    url: "https://www.linkedin.com/company/oruvatransport/",
   },
   {
     id: "JOIN_DISCORD",
@@ -204,12 +242,21 @@ export const TASKS: TaskDef[] = [
   },
   {
     id: "FOLLOW_THREADS",
-    title: "Follow @oruvatransport on Threads",
+    title: "Follow @Oruvatransport on Threads",
     description:
-      "Follow the official Oruva Transportation Services page on Threads. 1,000 pts — self-attested for now; automatic verification arrives with Threads account linking.",
+      "Follow the official Oruva Transportation Services page on Threads, then enter your Threads username below. Our verification bot checks that you follow the page, then gives you a code to add to your Threads bio to prove the account is yours. 1,000 pts — awarded only after verification.",
     points: FOLLOW_THREADS,
     repeatability: "once",
     url: "https://www.threads.com/@oruvatransport",
+  },
+  {
+    id: "FOLLOW_FACEBOOK",
+    title: "Follow @Oruvatransport on Facebook",
+    description:
+      "Follow the official Oruva Transportation Services page on Facebook, connect your Facebook account, then tap Verify. We check your liked/followed Pages directly with Facebook before awarding the 1,000 pts — no verification, no points.",
+    points: FOLLOW_FACEBOOK,
+    repeatability: "once",
+    url: "https://www.facebook.com/Oruvatransport",
   },
   {
     id: "LOCATION_PIN",
