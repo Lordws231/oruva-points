@@ -206,7 +206,7 @@ instagramRouter.get("/follow/status", requireAuth, (req: AuthedRequest, res) => 
 
 // ---------------------------------------------------------------- worker (admin)
 
-function requireAdmin(req: Request, res: Response, next: NextFunction): void {
+export function requireAdmin(req: Request, res: Response, next: NextFunction): void {
   if (!config.adminKey) {
     res.status(503).json({ error: "admin endpoints not configured" });
     return;

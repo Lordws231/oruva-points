@@ -61,4 +61,17 @@ export const config = {
   igRedirectUri:
     process.env.IG_REDIRECT_URI ??
     "https://apps-api-production-8edb.up.railway.app/api/auth/instagram/callback",
+
+  // Facebook Login (follow verification for FOLLOW_FACEBOOK).
+  // The user authorizes this app with the `user_likes` permission and the
+  // API checks GET /me/likes/<FB_PAGE_ID> on the Graph API before points
+  // are awarded. `user_likes` needs Meta App Review for public users;
+  // without FB_APP_ID/FB_APP_SECRET/FB_PAGE_ID the Facebook task fails
+  // closed (verification unavailable, NO points awarded).
+  fbAppId: process.env.FB_APP_ID ?? "",
+  fbAppSecret: process.env.FB_APP_SECRET ?? "",
+  fbPageId: process.env.FB_PAGE_ID ?? "",
+  fbRedirectUri:
+    process.env.FB_REDIRECT_URI ??
+    "https://apps-api-production-8edb.up.railway.app/api/auth/facebook/callback",
 };

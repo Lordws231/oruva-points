@@ -89,7 +89,7 @@ db.exec(`
   -- never returned by any API endpoint.
   CREATE TABLE IF NOT EXISTS linked_accounts (
     x_user_id        TEXT NOT NULL REFERENCES users(x_user_id),
-    provider         TEXT NOT NULL CHECK (provider IN ('threads','instagram')),
+    provider         TEXT NOT NULL CHECK (provider IN ('threads','instagram','facebook')),
     provider_user_id TEXT NOT NULL,
     username         TEXT NOT NULL,
     access_token     TEXT NOT NULL,
@@ -98,7 +98,75 @@ db.exec(`
     updated_at       TEXT NOT NULL DEFAULT (datetime('now')),
     PRIMARY KEY (x_user_id, provider)
   );
+  -- Social follow-verification bot (Threads + LinkedIn; Facebook verifies
+  -- live via the Graph API, Instagram keeps its own tables above).
+  -- Points for these tasks are awarded ONLY from a positive bot/admin
+  -- verification result — never from user self-attestation.
+  CREATE TABLE IF NOT EXISTS social_followers_snapshot (
+    provider          TEXT NOT NULL,
+    username          TEXT NOT NULL,
+    provider_user_id  TEXT,
+    fetched_at        TEXT NOT NULL DEFAULT (datetime('now')),
+    PRIMARY KEY (provider, username)
+  );
+  CREATE TABLE IF NOT EXISTS social_snapshot_meta (
+    provider       TEXT PRIMARY KEY,
+    fetched_at     TEXT NOT NULL DEFAULT (datetime('now')),
+    follower_count INTEGER NOT NULL DEFAULT 0
+  );
+  CREATE TABLE IF NOT EXISTS social_claimed (
+    provider    TEXT NOT NULL,
+    username    TEXT NOT NULL,
+    task_id     TEXT NOT NULL DEFAULT '',
+    x_user_id   TEXT NOT NULL REFERENCES users(x_user_id),
+    verified_at TEXT NOT NULL DEFAULT (datetime('now')),
+    PRIMARY KEY (provider, username, task_id)
+  );
+  CREATE TABLE IF NOT EXISTS social_pending (
+    x_user_id        TEXT NOT NULL REFERENCES users(x_user_id),
+    task_id          TEXT NOT NULL,
+    provider         TEXT NOT NULL,
+    username         TEXT NOT NULL,
+    provider_user_id TEXT,
+    code             TEXT NOT NULL,
+    status           TEXT NOT NULL DEFAULT 'pending',
+    expires_at       TEXT NOT NULL,
+    attempts         INTEGER NOT NULL DEFAULT 0,
+    created_at       TEXT NOT NULL DEFAULT (datetime('now')),
+    PRIMARY KEY (x_user_id, task_id)
+  );
 `);
+
+// Migration: widen linked_accounts.provider CHECK to include 'facebook'
+// for databases created before Facebook verification existed.
+{
+  const row = db
+    .prepare(
+      `SELECT sql FROM sqlite_master WHERE type = 'table' AND name = 'linked_accounts'`
+    )
+    .get() as { sql?: string } | undefined;
+  if (row?.sql && !row.sql.includes("'facebook'")) {
+    db.exec(`
+      BEGIN IMMEDIATE;
+      CREATE TABLE linked_accounts_new (
+        x_user_id        TEXT NOT NULL REFERENCES users(x_user_id),
+        provider         TEXT NOT NULL CHECK (provider IN ('threads','instagram','facebook')),
+        provider_user_id TEXT NOT NULL,
+        username         TEXT NOT NULL,
+        access_token     TEXT NOT NULL,
+        token_expires_at TEXT,
+        created_at       TEXT NOT NULL DEFAULT (datetime('now')),
+        updated_at       TEXT NOT NULL DEFAULT (datetime('now')),
+        PRIMARY KEY (x_user_id, provider)
+      );
+      INSERT OR IGNORE INTO linked_accounts_new
+        SELECT * FROM linked_accounts;
+      DROP TABLE linked_accounts;
+      ALTER TABLE linked_accounts_new RENAME TO linked_accounts;
+      COMMIT;
+    `);
+  }
+}
 
 // ---------------------------------------------------------------- helpers
 
@@ -645,7 +713,7 @@ export function listAwaitingInstagramChecks(): IgPendingRow[] {
 
 // ---------------------------------------------------------------- linked accounts (Meta OAuth)
 
-export type LinkedProvider = "threads" | "instagram";
+export type LinkedProvider = "threads" | "instagram" | "facebook";
 
 export interface LinkedAccountRow {
   x_user_id: string;
@@ -695,6 +763,238 @@ export function deleteLinkedAccount(
   db.prepare(
     `DELETE FROM linked_accounts WHERE x_user_id = ? AND provider = ?`
   ).run(xUserId, provider);
+}
+
+/** One linked account (includes its token — server-side use only). */
+export function getLinkedAccount(
+  xUserId: string,
+  provider: LinkedProvider
+): LinkedAccountRow | undefined {
+  const r = db
+    .prepare(
+      `SELECT * FROM linked_accounts WHERE x_user_id = ? AND provider = ?`
+    )
+    .get(xUserId, provider);
+  return asRow<LinkedAccountRow>(r);
+}
+
+// ------------------------------------------------------- social verification bot
+// Generalized follower-snapshot + bio/profile-code verification, modeled on
+// the Instagram bot tables above. Providers: "threads" | "linkedin".
+// Facebook does not use these tables — it verifies live via the Graph API
+// against the user's linked Facebook account (see routes/social-verify.ts).
+
+export type SocialProvider = "threads" | "linkedin";
+
+export interface SocialSnapshotEntry {
+  username: string;
+  providerUserId?: string | null;
+}
+
+/** Replace one provider's cached follower snapshot (worker-driven). */
+export function replaceSocialSnapshot(
+  provider: SocialProvider,
+  entries: SocialSnapshotEntry[]
+): void {
+  const now = new Date().toISOString();
+  db.exec("BEGIN IMMEDIATE");
+  try {
+    db.prepare(
+      `DELETE FROM social_followers_snapshot WHERE provider = ?`
+    ).run(provider);
+    const ins = db.prepare(
+      `INSERT OR IGNORE INTO social_followers_snapshot
+         (provider, username, provider_user_id, fetched_at) VALUES (?, ?, ?, ?)`
+    );
+    for (const e of entries) {
+      ins.run(provider, e.username.toLowerCase(), e.providerUserId ?? null, now);
+    }
+    db.prepare(
+      `INSERT INTO social_snapshot_meta (provider, fetched_at, follower_count)
+       VALUES (?, ?, ?)
+       ON CONFLICT(provider) DO UPDATE SET fetched_at = excluded.fetched_at,
+                                     follower_count = excluded.follower_count`
+    ).run(provider, now, entries.length);
+    db.exec("COMMIT");
+  } catch (err) {
+    db.exec("ROLLBACK");
+    throw err;
+  }
+}
+
+export interface SocialSnapshotMeta {
+  fetched_at: string;
+  follower_count: number;
+}
+
+export function getSocialSnapshotMeta(
+  provider: SocialProvider
+): SocialSnapshotMeta | undefined {
+  const r = db
+    .prepare(
+      `SELECT fetched_at, follower_count FROM social_snapshot_meta WHERE provider = ?`
+    )
+    .get(provider);
+  return asRow<SocialSnapshotMeta>(r);
+}
+
+/** Snapshot row for a username, or undefined if it is not a known follower. */
+export function getSocialSnapshotEntry(
+  provider: SocialProvider,
+  username: string
+): { username: string; provider_user_id: string | null } | undefined {
+  const r = db
+    .prepare(
+      `SELECT username, provider_user_id FROM social_followers_snapshot
+       WHERE provider = ? AND username = ? LIMIT 1`
+    )
+    .get(provider, username.toLowerCase());
+  return asRow<{ username: string; provider_user_id: string | null }>(r);
+}
+
+/**
+ * Uniqueness is per (provider, username, task): one social account earns
+ * each task once — the same LinkedIn profile can legitimately earn both
+ * LinkedIn tasks (founder follow + company Page follow), but never the
+ * same task twice or for two different X accounts.
+ */
+export function isSocialUsernameClaimed(
+  provider: SocialProvider | "facebook",
+  username: string,
+  taskId: string
+): boolean {
+  const r = db
+    .prepare(
+      `SELECT 1 FROM social_claimed
+       WHERE provider = ? AND username = ? AND task_id = ? LIMIT 1`
+    )
+    .get(provider, username.toLowerCase(), taskId);
+  return r !== undefined;
+}
+
+/** Record a verified follow. False if the username already claimed this task. */
+export function claimSocialUsername(
+  provider: SocialProvider | "facebook",
+  username: string,
+  xUserId: string,
+  taskId: string
+): boolean {
+  const res = db
+    .prepare(
+      `INSERT OR IGNORE INTO social_claimed (provider, username, task_id, x_user_id)
+       VALUES (?, ?, ?, ?)`
+    )
+    .run(provider, username.toLowerCase(), taskId, xUserId);
+  return Number(res.changes) === 1;
+}
+
+export interface SocialPendingRow {
+  x_user_id: string;
+  task_id: string;
+  provider: string;
+  username: string;
+  provider_user_id: string | null;
+  code: string;
+  status: string;
+  expires_at: string;
+  attempts: number;
+  created_at: string;
+}
+
+export function createSocialPending(
+  xUserId: string,
+  taskId: string,
+  provider: SocialProvider,
+  username: string,
+  providerUserId: string | null,
+  code: string,
+  expiresAt: string
+): void {
+  db.prepare(
+    `INSERT INTO social_pending
+       (x_user_id, task_id, provider, username, provider_user_id, code, status, expires_at, attempts)
+     VALUES (?, ?, ?, ?, ?, ?, 'pending', ?, 0)
+     ON CONFLICT(x_user_id, task_id) DO UPDATE SET
+       provider = excluded.provider,
+       username = excluded.username,
+       provider_user_id = excluded.provider_user_id,
+       code = excluded.code,
+       status = 'pending',
+       expires_at = excluded.expires_at,
+       attempts = 0,
+       created_at = datetime('now')`
+  ).run(
+    xUserId,
+    taskId,
+    provider,
+    username.toLowerCase(),
+    providerUserId,
+    code,
+    expiresAt
+  );
+}
+
+export function getSocialPending(
+  xUserId: string,
+  taskId: string
+): SocialPendingRow | undefined {
+  const r = db
+    .prepare(
+      `SELECT * FROM social_pending WHERE x_user_id = ? AND task_id = ?`
+    )
+    .get(xUserId, taskId);
+  return asRow<SocialPendingRow>(r);
+}
+
+export function setSocialPendingStatus(
+  xUserId: string,
+  taskId: string,
+  status: string
+): void {
+  db.prepare(
+    `UPDATE social_pending SET status = ? WHERE x_user_id = ? AND task_id = ?`
+  ).run(status, xUserId, taskId);
+}
+
+export function bumpSocialPendingAttempts(
+  xUserId: string,
+  taskId: string
+): number {
+  db.prepare(
+    `UPDATE social_pending SET attempts = attempts + 1
+     WHERE x_user_id = ? AND task_id = ?`
+  ).run(xUserId, taskId);
+  return getSocialPending(xUserId, taskId)?.attempts ?? 0;
+}
+
+export function deleteSocialPending(xUserId: string, taskId: string): void {
+  db.prepare(
+    `DELETE FROM social_pending WHERE x_user_id = ? AND task_id = ?`
+  ).run(xUserId, taskId);
+}
+
+/** Pending code checks ready for the bot worker (awaiting, unexpired). */
+export function listAwaitingSocialChecks(
+  provider?: SocialProvider
+): SocialPendingRow[] {
+  const r = provider
+    ? db
+        .prepare(
+          `SELECT * FROM social_pending
+           WHERE status = 'awaiting_check' AND provider = ?
+             AND datetime(expires_at) > datetime('now')
+           ORDER BY created_at ASC`
+        )
+        .all(provider)
+    : db
+        .prepare(
+          `SELECT * FROM social_pending
+           WHERE status = 'awaiting_check'
+             AND datetime(expires_at) > datetime('now')
+           ORDER BY created_at ASC`
+        )
+        .all();
+  return asRows<SocialPendingRow>(r);
 }
 
 // ---------------------------------------------------------------- leaderboard

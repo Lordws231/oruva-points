@@ -5,7 +5,8 @@ Engagement-points website for **Oruva Transportation Services**, modeled on the
 scoring + weekly epochs + on-chain token claims** — but claims settle on
 **Solana** (SPL token `ORVA`) instead of Ethereum.
 
-Users connect with X, complete tasks (follow @Oruvatransport, follow the
+Users connect with X, complete tasks (follow @Oruvatransport on X,
+Instagram, Threads and Facebook, join the Discord server, follow the
 founder on X/LinkedIn, post on X with the campaign hashtags, share live area
 location pinpoints), earn points in weekly epochs across three 26-week
 seasons, then claim a pro-rata share of 100,000,000 ORVA per season at each
@@ -90,9 +91,14 @@ Put the returned `id` values into `X_ORUVA_USER_ID` and `X_FOUNDER_USER_ID`.
 
 | Task | Points | Rule |
 |------|--------|------|
-| Follow @Oruvatransport on X | 2,000 | one-time |
-| Follow founder @AbiodunOyaniyi on X | 2,000 | one-time |
-| Follow founder on LinkedIn | 2,000 | one-time |
+| Follow @Oruvatransport on X | 1,000 | one-time |
+| Follow founder @AbiodunOyaniyi on X | 1,000 | one-time |
+| Follow founder on LinkedIn | 1,000 | one-time |
+| Follow Oruva Transportation Services on LinkedIn | 1,000 | one-time |
+| Follow @Oruvatransport on Instagram | 1,000 | one-time |
+| Follow @Oruvatransport on Threads | 1,000 | one-time |
+| Follow @Oruvatransport on Facebook | 1,000 | one-time |
+| Join the Oruva Discord server | 1,000 | one-time |
 | Post on X with campaign hashtags | 100 | repeatable; no daily limit; post must include a campaign hashtag; each tweet claimable once |
 | Share live area location pinpoint | 1,500 each | repeatable; ≤10/day; ≥100 m from previous pin |
 | **Engagement milestones — verified X accounts** |||
@@ -139,7 +145,14 @@ Put the returned `id` values into `X_ORUVA_USER_ID` and `X_FOUNDER_USER_ID`.
   with a campaign hashtag in the text (`verified=true`). Without the token
   it degrades to self-attestation (`verified=false`); dedupe (one claim per
   tweet) always applies, and there is no daily cap.
-- **LinkedIn**: no public follow-verification API exists — always
+- **Instagram / Threads / Facebook / LinkedIn follows**: verified by the
+  social verification bot before any points are awarded — see
+  `docs/VERIFICATION_BOT.md`. Instagram and Threads use follower-snapshot
+  + bio-code bot checks; Facebook uses a live Graph API `user_likes`
+  check against the user's connected account; LinkedIn uses a pending
+  code queue verified against the founder's own follower list (LinkedIn
+  offers no individual-follow API). No verification, no points.
+- **Discord**: no public join-verification API exists — still
   self-attestation (`{confirm:true}`).
 - **Geocoding**: the `city` label on pins is user-supplied free text; no
   reverse-geocoding is performed server-side.

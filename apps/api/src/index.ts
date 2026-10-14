@@ -1,6 +1,8 @@
 import express from "express";
 import { config } from "./config.js";
 import { threadsConfigured, instagramConfigured } from "./meta.js";
+import { facebookConfigured } from "./facebook.js";
+import { socialRouter } from "./routes/social-verify.js";
 import { parseCookies } from "./cookies.js";
 import { SESSION_COOKIE } from "./session.js";
 import { authRouter } from "./routes/auth.js";
@@ -49,6 +51,7 @@ app.get("/api/health", (_req, res) => {
     xConfigured: Boolean(config.xClientId),
     threadsConfigured: threadsConfigured(),
     instagramConfigured: instagramConfigured(),
+    facebookConfigured: facebookConfigured(),
   });
 });
 
@@ -56,6 +59,7 @@ app.use("/api/auth", authRouter);
 app.use("/api/auth", linkedRouter);
 app.use("/api/tasks", tasksRouter);
 app.use("/api/instagram", instagramRouter);
+app.use("/api/social", socialRouter);
 app.use("/api/location", locationRouter);
 app.use("/api/points", pointsRouter);
 app.use("/api/leaderboard", leaderboardRouter);
