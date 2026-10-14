@@ -75,3 +75,6 @@ export const config = {
     process.env.FB_REDIRECT_URI ??
     "https://apps-api-production-8edb.up.railway.app/api/auth/facebook/callback",
 };
+
+// Deployment note: Farm Engagement release — follow-task verification
+// (Facebook/Instagram/Threads/LinkedIn) and 1,000-pt follow tasks.
