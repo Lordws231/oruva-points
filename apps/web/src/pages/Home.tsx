@@ -1,4 +1,4 @@
-import { Fragment, useState } from "react";
+import { Fragment, useState, type ReactNode } from "react";
 import { Link } from "react-router-dom";
 import {
   CAMPAIGN_HASHTAGS,
@@ -17,7 +17,7 @@ const STEPS = [
   {
     n: 2,
     title: "Complete tasks",
-    text: "Follow @Oruvatransport, follow the founder on X and LinkedIn, join the Oruva Discord server, post on X with the campaign hashtags, hit engagement milestones on your posts, and share live area location pinpoints.",
+    text: "Follow @Oruvatransport on X, Instagram, Threads and Facebook, follow the founder on X and LinkedIn, follow Oruva Transportation Services on LinkedIn, join the Oruva Discord server, post on X with the campaign hashtags, hit engagement milestones on your posts, and share live area location pinpoints.",
   },
   {
     n: 3,
@@ -35,16 +35,22 @@ interface PointRow {
   task: string;
   pts: string;
   freq: string;
+  /** Official destination — the task name renders as a clickable link. */
+  url?: string;
 }
 
 const POINT_GROUPS: { heading: string | null; rows: PointRow[] }[] = [
   {
     heading: null,
     rows: [
-      { task: "Follow @Oruvatransport on X", pts: "2,000", freq: "one-time" },
-      { task: "Follow founder @AbiodunOyaniyi on X", pts: "2,000", freq: "one-time" },
-      { task: "Follow founder on LinkedIn", pts: "2,000", freq: "one-time" },
-      { task: "Join the Oruva Discord server", pts: "1,000", freq: "one-time" },
+      { task: "Follow @Oruvatransport on X", pts: "1,000", freq: "one-time", url: "https://x.com/Oruvatransport" },
+      { task: "Follow founder @AbiodunOyaniyi on X", pts: "1,000", freq: "one-time", url: "https://x.com/AbiodunOyaniyi" },
+      { task: "Follow founder on LinkedIn", pts: "1,000", freq: "one-time", url: "https://www.linkedin.com/in/abiodun-oyaniyi-6aab0a253" },
+      { task: "Follow Oruva Transportation Services on LinkedIn", pts: "1,000", freq: "one-time", url: "https://www.linkedin.com/company/oruvatransport/" },
+      { task: "Follow @Oruvatransport on Instagram", pts: "1,000", freq: "one-time", url: "https://www.instagram.com/oruvatransport/" },
+      { task: "Follow @Oruvatransport on Threads", pts: "1,000", freq: "one-time", url: "https://www.threads.com/@oruvatransport" },
+      { task: "Follow @Oruvatransport on Facebook", pts: "1,000", freq: "one-time", url: "https://www.facebook.com/Oruvatransport" },
+      { task: "Join the Oruva Discord server", pts: "1,000", freq: "one-time", url: "https://discord.gg/6G67trYsMw" },
       { task: "Post on X with campaign hashtags", pts: "100", freq: "repeatable · unlimited" },
       { task: "Share live area location pinpoint", pts: "1,500", freq: "repeatable · up to 10/day" },
     ],
@@ -69,6 +75,10 @@ function Calculator() {
   const [f2, setF2] = useState(true);
   const [f3, setF3] = useState(false);
   const [f4, setF4] = useState(false);
+  const [f5, setF5] = useState(false);
+  const [f6, setF6] = useState(false);
+  const [f7, setF7] = useState(false);
+  const [f8, setF8] = useState(false);
   const [posts, setPosts] = useState(20);
   const [pins, setPins] = useState(7);
   const [milestones, setMilestones] = useState<Record<string, boolean>>({});
@@ -78,10 +88,14 @@ function Calculator() {
     .reduce((s, [id]) => s + (taskById(id)?.points ?? 0), 0);
 
   const points =
-    (f1 ? 2000 : 0) +
-    (f2 ? 2000 : 0) +
-    (f3 ? 2000 : 0) +
+    (f1 ? 1000 : 0) +
+    (f2 ? 1000 : 0) +
+    (f3 ? 1000 : 0) +
     (f4 ? 1000 : 0) +
+    (f5 ? 1000 : 0) +
+    (f6 ? 1000 : 0) +
+    (f7 ? 1000 : 0) +
+    (f8 ? 1000 : 0) +
     posts * 100 +
     pins * 1500 +
     milestonePoints;
@@ -95,20 +109,37 @@ function Calculator() {
       </p>
       <div className="mt-4 space-y-3 text-sm">
         {[
-          { label: "Follow @Oruvatransport (+2,000)", v: f1, s: setF1 },
-          { label: "Follow founder on X (+2,000)", v: f2, s: setF2 },
-          { label: "Follow founder on LinkedIn (+2,000)", v: f3, s: setF3 },
-          { label: "Join the Oruva Discord server (+1,000)", v: f4, s: setF4 },
+          { label: "Follow @Oruvatransport (+1,000)", v: f1, s: setF1, url: "https://x.com/Oruvatransport" },
+          { label: "Follow founder on X (+1,000)", v: f2, s: setF2, url: "https://x.com/AbiodunOyaniyi" },
+          { label: "Follow founder on LinkedIn (+1,000)", v: f3, s: setF3, url: "https://www.linkedin.com/in/abiodun-oyaniyi-6aab0a253" },
+          { label: "Follow Oruva Transportation Services on LinkedIn (+1,000)", v: f8, s: setF8, url: "https://www.linkedin.com/company/oruvatransport/" },
+          { label: "Follow @Oruvatransport on Instagram (+1,000)", v: f5, s: setF5, url: "https://www.instagram.com/oruvatransport/" },
+          { label: "Follow @Oruvatransport on Threads (+1,000)", v: f6, s: setF6, url: "https://www.threads.com/@oruvatransport" },
+          { label: "Follow @Oruvatransport on Facebook (+1,000)", v: f7, s: setF7, url: "https://www.facebook.com/Oruvatransport" },
+          { label: "Join the Oruva Discord server (+1,000)", v: f4, s: setF4, url: "https://discord.gg/6G67trYsMw" },
         ].map((r) => (
-          <label key={r.label} className="flex cursor-pointer items-center gap-3">
-            <input
-              type="checkbox"
-              checked={r.v}
-              onChange={(e) => r.s(e.target.checked)}
-              className="h-4 w-4 accent-amber-500"
-            />
-            {r.label}
-          </label>
+          <div key={r.label} className="flex items-center gap-3">
+            <label className="flex flex-1 cursor-pointer items-center gap-3">
+              <input
+                type="checkbox"
+                checked={r.v}
+                onChange={(e) => r.s(e.target.checked)}
+                className="h-4 w-4 accent-amber-500"
+              />
+              {r.label}
+            </label>
+            {"url" in r && r.url && (
+              <a
+                href={r.url}
+                target="_blank"
+                rel="noreferrer"
+                aria-label={`Open ${r.label}`}
+                className="shrink-0 rounded-full border border-ember-500/60 bg-ember-500/10 px-3 py-1 text-xs font-bold text-ember-400 transition hover:bg-ember-500 hover:text-navy-950 active:scale-[0.98]"
+              >
+                Open ↗
+              </a>
+            )}
+          </div>
         ))}
         <div>
           <label className="flex items-center justify-between">
@@ -199,6 +230,26 @@ function Calculator() {
   );
 }
 
+/** Inline official-page link used in the "Complete tasks" step. */
+function StepLink({
+  href,
+  children,
+}: {
+  href: string;
+  children: ReactNode;
+}) {
+  return (
+    <a
+      href={href}
+      target="_blank"
+      rel="noreferrer"
+      className="mx-0.5 inline-flex items-center gap-1 rounded-full border border-ember-500/50 bg-ember-500/10 px-2.5 py-0.5 align-baseline font-semibold text-ember-400 transition hover:bg-ember-500 hover:text-navy-950 active:scale-[0.98]"
+    >
+      {children} ↗
+    </a>
+  );
+}
+
 export default function Home() {
   const { user, connectX } = useAuth();
 
@@ -257,7 +308,43 @@ export default function Home() {
                 {s.n}
               </div>
               <h3 className="mt-3 font-bold">{s.title}</h3>
-              <p className="mt-1 text-sm text-slate-400">{s.text}</p>
+              {s.n === 2 ? (
+                <p className="mt-1 text-sm text-slate-400">
+                  Follow @Oruvatransport on{" "}
+                  <StepLink href="https://x.com/Oruvatransport">X</StepLink>,{" "}
+                  <StepLink href="https://www.instagram.com/oruvatransport/">
+                    Instagram
+                  </StepLink>
+                  ,{" "}
+                  <StepLink href="https://www.threads.com/@oruvatransport">
+                    Threads
+                  </StepLink>{" "}
+                  and{" "}
+                  <StepLink href="https://www.facebook.com/Oruvatransport">
+                    Facebook
+                  </StepLink>
+                  , follow the founder on{" "}
+                  <StepLink href="https://x.com/AbiodunOyaniyi">X</StepLink>{" "}
+                  and{" "}
+                  <StepLink href="https://www.linkedin.com/in/abiodun-oyaniyi-6aab0a253">
+                    LinkedIn
+                  </StepLink>
+                  , follow{" "}
+                  <StepLink href="https://www.linkedin.com/company/oruvatransport/">
+                    Oruva Transportation Services on LinkedIn
+                  </StepLink>
+                  , join the{" "}
+                  <StepLink href="https://discord.gg/6G67trYsMw">
+                    Oruva Discord server
+                  </StepLink>
+                  , post on X with the campaign hashtags, hit engagement
+                  milestones on your posts, and share live area location
+                  pinpoints. Always use these official links — then verify
+                  each follow on the tasks page to earn.
+                </p>
+              ) : (
+                <p className="mt-1 text-sm text-slate-400">{s.text}</p>
+              )}
             </div>
           ))}
         </div>
@@ -317,7 +404,20 @@ export default function Home() {
                     {g.rows.map((r) => (
                       <tr key={r.task} className="border-t border-navy-800">
                         <td className="px-4 py-3">
-                          <div className="font-medium">{r.task}</div>
+                          <div className="font-medium">
+                            {r.url ? (
+                              <a
+                                href={r.url}
+                                target="_blank"
+                                rel="noreferrer"
+                                className="inline-flex items-center gap-1.5 rounded-full border border-ember-500/60 bg-ember-500/10 px-3.5 py-1.5 font-semibold text-ember-400 shadow-sm transition hover:bg-ember-500 hover:text-navy-950 active:scale-[0.98]"
+                              >
+                                {r.task} ↗
+                              </a>
+                            ) : (
+                              r.task
+                            )}
+                          </div>
                           <div className="text-xs text-slate-500">{r.freq}</div>
                         </td>
                         <td className="px-4 py-3 text-right font-mono font-bold text-ember-400">

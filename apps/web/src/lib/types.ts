@@ -69,7 +69,7 @@ export interface PointsMe {
 }
 
 export interface LinkedAccount {
-  provider: "threads" | "instagram";
+  provider: "threads" | "instagram" | "facebook";
   username: string;
   linkedAt: string;
 }

@@ -12,8 +12,9 @@ const BASE: string =
   (import.meta.env.VITE_API_URL as string | undefined) ?? "";
 
 /** Full-page OAuth authorize URL for linking a social account. */
-export const authConnectUrl = (provider: "instagram" | "threads"): string =>
-  `${BASE}/api/auth/${provider}`;
+export const authConnectUrl = (
+  provider: "instagram" | "threads" | "facebook"
+): string => `${BASE}/api/auth/${provider}`;
 
 export class ApiError extends Error {
   status: number;
@@ -48,7 +49,7 @@ export const api = {
   logout: () => req<{ ok: true }>("/api/auth/logout", { method: "POST" }),
 
   linked: () => req<{ accounts: LinkedAccount[] }>("/api/auth/linked"),
-  disconnectLinked: (provider: "instagram" | "threads") =>
+  disconnectLinked: (provider: "instagram" | "threads" | "facebook") =>
     req<{ ok: true }>(`/api/auth/linked/${provider}/disconnect`, {
       method: "POST",
     }),
@@ -107,6 +108,42 @@ export const api = {
       username?: string;
       expiresAt?: string;
     }>("/api/instagram/follow/status"),
+
+  // Social follow verification bot (Threads + LinkedIn code flow,
+  // Facebook live Graph check). Points are awarded only on verification.
+  socialStart: (
+    taskId: string,
+    body: { username?: string; profileUrl?: string }
+  ) =>
+    req<{
+      ok: boolean;
+      already?: boolean;
+      points?: number;
+      code?: string;
+      username?: string;
+      codeTarget?: string;
+      expiresInMinutes?: number;
+    }>(`/api/social/${taskId}/start`, {
+      method: "POST",
+      body: JSON.stringify(body),
+    }),
+  socialVerify: (taskId: string) =>
+    req<{ ok: boolean; already?: boolean; status?: string }>(
+      `/api/social/${taskId}/verify`,
+      { method: "POST" }
+    ),
+  socialStatus: (taskId: string) =>
+    req<{
+      state: "none" | "pending" | "checking" | "done" | "failed" | "expired";
+      code?: string;
+      username?: string;
+      expiresAt?: string;
+    }>(`/api/social/${taskId}/status`),
+  facebookVerify: () =>
+    req<{ ok: boolean; already?: boolean; points?: number; verified?: boolean }>(
+      "/api/social/facebook/verify",
+      { method: "POST" }
+    ),
 
   submitPin: (lat: number, lng: number, city?: string) =>
     req<{ ok: true; pin: Pin; points: number }>("/api/location", {

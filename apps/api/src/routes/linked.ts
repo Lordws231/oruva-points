@@ -31,6 +31,12 @@ import {
   fetchInstagramProfile,
 } from "../meta.js";
 import {
+  facebookConfigured,
+  facebookAuthorizeUrl,
+  facebookExchangeCode,
+  fetchFacebookProfile,
+} from "../facebook.js";
+import {
   upsertLinkedAccount,
   listLinkedAccounts,
   deleteLinkedAccount,
@@ -39,7 +45,7 @@ import {
 
 export const linkedRouter = Router();
 
-const PROVIDERS = ["threads", "instagram"] as const;
+const PROVIDERS = ["threads", "instagram", "facebook"] as const;
 type Provider = (typeof PROVIDERS)[number];
 
 /** One-shot OAuth state store: state → { xUserId, provider }. */
@@ -76,7 +82,11 @@ function redirectLinked(res: import("express").Response, provider: Provider) {
 function startLink(provider: Provider) {
   return (req: AuthedRequest, res: import("express").Response) => {
     const configured =
-      provider === "threads" ? threadsConfigured() : instagramConfigured();
+      provider === "threads"
+        ? threadsConfigured()
+        : provider === "facebook"
+          ? facebookConfigured()
+          : instagramConfigured();
     if (!configured) {
       redirectWithError(res, `${provider}-not-configured`);
       return;
@@ -85,13 +95,16 @@ function startLink(provider: Provider) {
     const url =
       provider === "threads"
         ? threadsAuthorizeUrl(state)
-        : instagramAuthorizeUrl(state);
+        : provider === "facebook"
+          ? facebookAuthorizeUrl(state)
+          : instagramAuthorizeUrl(state);
     res.redirect(url);
   };
 }
 
 linkedRouter.get("/threads", requireAuth, startLink("threads"));
 linkedRouter.get("/instagram", requireAuth, startLink("instagram"));
+linkedRouter.get("/facebook", requireAuth, startLink("facebook"));
 
 function handleCallback(provider: Provider) {
   return async (req: import("express").Request, res: import("express").Response) => {
@@ -125,11 +138,20 @@ function handleCallback(provider: Provider) {
       const tokens =
         provider === "threads"
           ? await threadsExchangeCode(q.code)
-          : await instagramExchangeCode(q.code);
+          : provider === "facebook"
+            ? await facebookExchangeCode(q.code)
+            : await instagramExchangeCode(q.code);
+      // Facebook profiles have a display name, not a username — the name
+      // doubles as the linked "username" label (the Graph id is the key).
       const profile =
         provider === "threads"
           ? await fetchThreadsProfile(tokens.accessToken)
-          : await fetchInstagramProfile(tokens.accessToken);
+          : provider === "facebook"
+            ? await fetchFacebookProfile(tokens.accessToken).then((p) => ({
+                id: p.id,
+                username: p.name || p.id,
+              }))
+            : await fetchInstagramProfile(tokens.accessToken);
       upsertLinkedAccount(
         saved.xUserId,
         provider as LinkedProvider,
@@ -151,6 +173,7 @@ function handleCallback(provider: Provider) {
 
 linkedRouter.get("/threads/callback", handleCallback("threads"));
 linkedRouter.get("/instagram/callback", handleCallback("instagram"));
+linkedRouter.get("/facebook/callback", handleCallback("facebook"));
 
 linkedRouter.get("/linked", requireAuth, (req: AuthedRequest, res) => {
   const rows = listLinkedAccounts(req.xUserId!);
