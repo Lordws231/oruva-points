@@ -3,7 +3,7 @@
 # Oruva Instagram follow-bot worker.
 #
 # Two modes (run as separate cron jobs):
-#   snapshot — refresh the cached @oruvatransport follower list on the API
+#   snapshot — refresh the cached @oruvatransportation follower list on the API
 #              (every 30 min is plenty; the API serves claims from cache)
 #   pending  — check queued bio-code ownership proofs and report results
 #              (every 5 min; each check is one lightweight profile read)
@@ -12,7 +12,7 @@
 #   ORUVA_API_URL    e.g. https://apps-api-production-8edb.up.railway.app
 #   ORUVA_ADMIN_KEY  shared secret for /api/instagram/admin/* (x-admin-key)
 #
-# The @oruvatransport Instagram account must be linked to instagram-cli
+# The @oruvatransportation Instagram account must be linked to instagram-cli
 # (via the Meta Accounts Center connect flow) before this can run.
 
 set -euo pipefail
@@ -29,12 +29,12 @@ MODE="${1:?usage: ig-worker.sh snapshot|pending}"
 API="$ORUVA_API_URL/api/instagram/admin"
 
 ACCOUNTS_JSON="$(instagram-cli accounts 2>/dev/null || echo '{"accounts":[]}')"
-ACCOUNT_ID="$(echo "$ACCOUNTS_JSON" | jq -r '.accounts[] | select(.username=="oruvatransport") | .user_fbid // empty' 2>/dev/null | head -1)"
+ACCOUNT_ID="$(echo "$ACCOUNTS_JSON" | jq -r '.accounts[] | select(.username=="oruvatransportation") | .user_fbid // empty' 2>/dev/null | head -1)"
 if [[ -z "$ACCOUNT_ID" ]]; then
   ACCOUNT_ID="$(echo "$ACCOUNTS_JSON" | jq -r '.accounts[0].user_fbid // empty' 2>/dev/null)"
 fi
 if [[ -z "$ACCOUNT_ID" ]]; then
-  echo "ig-worker: no linked Instagram account (link @oruvatransport first)" >&2
+  echo "ig-worker: no linked Instagram account (link @oruvatransportation first)" >&2
   exit 1
 fi
 
