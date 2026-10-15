@@ -17,7 +17,7 @@ const STEPS = [
   {
     n: 2,
     title: "Complete tasks",
-    text: "Follow @Oruvatransport on X, Instagram, Threads and Facebook, follow the founder on X and LinkedIn, follow Oruva Transportation Services on LinkedIn, join the Oruva Discord server, post on X with the campaign hashtags, hit engagement milestones on your posts, and share live area location pinpoints.",
+    text: "Follow @Oruvatransport on X and Facebook, @oruvatransportation on Instagram and Threads, follow the founder on X and LinkedIn, follow Oruva Transportation Services on LinkedIn, join the Oruva Discord server, post on X with the campaign hashtags, hit engagement milestones on your posts, and share live area location pinpoints.",
   },
   {
     n: 3,
@@ -311,17 +311,18 @@ export default function Home() {
               {s.n === 2 ? (
                 <p className="mt-1 text-sm text-slate-400">
                   Follow @Oruvatransport on{" "}
-                  <StepLink href="https://x.com/Oruvatransport">X</StepLink>,{" "}
-                  <StepLink href="https://www.instagram.com/oruvatransportation/">
-                    Instagram
-                  </StepLink>
-                  ,{" "}
-                  <StepLink href="https://www.threads.com/@oruvatransportation">
-                    Threads
-                  </StepLink>{" "}
+                  <StepLink href="https://x.com/Oruvatransport">X</StepLink>{" "}
                   and{" "}
                   <StepLink href="https://www.facebook.com/Oruvatransport">
                     Facebook
+                  </StepLink>
+                  , and @oruvatransportation on{" "}
+                  <StepLink href="https://www.instagram.com/oruvatransportation/">
+                    Instagram
+                  </StepLink>{" "}
+                  and{" "}
+                  <StepLink href="https://www.threads.com/@oruvatransportation">
+                    Threads
                   </StepLink>
                   , follow the founder on{" "}
                   <StepLink href="https://x.com/AbiodunOyaniyi">X</StepLink>{" "}
