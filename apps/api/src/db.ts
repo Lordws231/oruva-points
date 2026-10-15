@@ -58,7 +58,7 @@ db.exec(`
     claimed_at TEXT NOT NULL DEFAULT (datetime('now')),
     PRIMARY KEY (x_user_id, epoch)
   );
-  -- Instagram follow bot: cached follower snapshot of @oruvatransport,
+  -- Instagram follow bot: cached follower snapshot of @oruvatransportation,
   -- globally-claimed usernames (one username earns FOLLOW_INSTAGRAM once,
   -- first-come), and pending bio-code ownership checks.
   CREATE TABLE IF NOT EXISTS ig_followers_snapshot (
@@ -578,7 +578,7 @@ export interface IgSnapshotMeta {
   follower_count: number;
 }
 
-/** Replace the cached @oruvatransport follower snapshot (worker-driven). */
+/** Replace the cached @oruvatransportation follower snapshot (worker-driven). */
 export function replaceFollowerSnapshot(usernames: string[]): void {
   const now = new Date().toISOString();
   db.exec("BEGIN IMMEDIATE");
