@@ -58,7 +58,7 @@ function pendingExpired(expiresAt: string): boolean {
  * POST /api/instagram/follow/start — begin the Instagram follow claim.
  * Body: { username }.
  *
- * Checks the cached @oruvatransport follower snapshot: the username must
+ * Checks the cached @oruvatransportation follower snapshot: the username must
  * exist there (i.e. it follows the page). Then issues a one-time bio code
  * the user must add to their Instagram bio to prove ownership.
  * Usernames are globally unique: one Instagram username can only ever earn
@@ -101,7 +101,7 @@ instagramRouter.post(
         ok: false,
         reason: "not_following",
         error:
-          "@oruvatransport doesn't show this username as a follower yet. Follow the page on Instagram, wait up to ~30 minutes, then try again.",
+          "@oruvatransportation doesn't show this username as a follower yet. Follow the page on Instagram, wait up to ~30 minutes, then try again.",
       });
       return;
     }
@@ -312,7 +312,7 @@ instagramRouter.post("/admin/verify-result", requireAdmin, (req, res) => {
     epochId(),
     def.points,
     true,
-    `Instagram @${pending.username} follows @oruvatransport; bio-code ownership verified by bot`
+    `Instagram @${pending.username} follows @oruvatransportation; bio-code ownership verified by bot`
   );
   deleteInstagramPending(userId);
   res.json({
