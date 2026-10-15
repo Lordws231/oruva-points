@@ -47,8 +47,8 @@ const POINT_GROUPS: { heading: string | null; rows: PointRow[] }[] = [
       { task: "Follow founder @AbiodunOyaniyi on X", pts: "1,000", freq: "one-time", url: "https://x.com/AbiodunOyaniyi" },
       { task: "Follow founder on LinkedIn", pts: "1,000", freq: "one-time", url: "https://www.linkedin.com/in/abiodun-oyaniyi-6aab0a253" },
       { task: "Follow Oruva Transportation Services on LinkedIn", pts: "1,000", freq: "one-time", url: "https://www.linkedin.com/company/oruvatransport/" },
-      { task: "Follow @Oruvatransport on Instagram", pts: "1,000", freq: "one-time", url: "https://www.instagram.com/oruvatransport/" },
-      { task: "Follow @Oruvatransport on Threads", pts: "1,000", freq: "one-time", url: "https://www.threads.com/@oruvatransport" },
+      { task: "Follow @oruvatransportation on Instagram", pts: "1,000", freq: "one-time", url: "https://www.instagram.com/oruvatransportation/" },
+      { task: "Follow @oruvatransportation on Threads", pts: "1,000", freq: "one-time", url: "https://www.threads.com/@oruvatransportation" },
       { task: "Follow @Oruvatransport on Facebook", pts: "1,000", freq: "one-time", url: "https://www.facebook.com/Oruvatransport" },
       { task: "Join the Oruva Discord server", pts: "1,000", freq: "one-time", url: "https://discord.gg/6G67trYsMw" },
       { task: "Post on X with campaign hashtags", pts: "100", freq: "repeatable · unlimited" },
@@ -113,8 +113,8 @@ function Calculator() {
           { label: "Follow founder on X (+1,000)", v: f2, s: setF2, url: "https://x.com/AbiodunOyaniyi" },
           { label: "Follow founder on LinkedIn (+1,000)", v: f3, s: setF3, url: "https://www.linkedin.com/in/abiodun-oyaniyi-6aab0a253" },
           { label: "Follow Oruva Transportation Services on LinkedIn (+1,000)", v: f8, s: setF8, url: "https://www.linkedin.com/company/oruvatransport/" },
-          { label: "Follow @Oruvatransport on Instagram (+1,000)", v: f5, s: setF5, url: "https://www.instagram.com/oruvatransport/" },
-          { label: "Follow @Oruvatransport on Threads (+1,000)", v: f6, s: setF6, url: "https://www.threads.com/@oruvatransport" },
+          { label: "Follow @oruvatransportation on Instagram (+1,000)", v: f5, s: setF5, url: "https://www.instagram.com/oruvatransportation/" },
+          { label: "Follow @oruvatransportation on Threads (+1,000)", v: f6, s: setF6, url: "https://www.threads.com/@oruvatransportation" },
           { label: "Follow @Oruvatransport on Facebook (+1,000)", v: f7, s: setF7, url: "https://www.facebook.com/Oruvatransport" },
           { label: "Join the Oruva Discord server (+1,000)", v: f4, s: setF4, url: "https://discord.gg/6G67trYsMw" },
         ].map((r) => (
@@ -312,11 +312,11 @@ export default function Home() {
                 <p className="mt-1 text-sm text-slate-400">
                   Follow @Oruvatransport on{" "}
                   <StepLink href="https://x.com/Oruvatransport">X</StepLink>,{" "}
-                  <StepLink href="https://www.instagram.com/oruvatransport/">
+                  <StepLink href="https://www.instagram.com/oruvatransportation/">
                     Instagram
                   </StepLink>
                   ,{" "}
-                  <StepLink href="https://www.threads.com/@oruvatransport">
+                  <StepLink href="https://www.threads.com/@oruvatransportation">
                     Threads
                   </StepLink>{" "}
                   and{" "}
