@@ -10,10 +10,11 @@
      dead and hid every success message.
    - Subscribe gives instant visible feedback ("Subscribing…"), and errors
      show inline under the form.
-   - On success, OUR success message shows on the oruva.com.ng homepage:
-     in place if the visitor is already there, otherwise the browser goes
-     straight to the homepage and the message appears there. It counts
-     down 10 seconds and closes itself. The visitor never leaves the site.
+   - On success, OUR success message shows right where the visitor is —
+     each website keeps its own visitors (Esther's correction, 2026-10-15
+     18:44 WAT: no redirecting the Points site or any other site to the
+     oruva.com.ng homepage; the only way off a site is a link the visitor
+     clicks deliberately). It counts down 10 seconds and closes itself.
    - The popup itself simply overlays the page — homepage slides keep
      flowing behind it — until the visitor registers or closes it.
    Consent: this form is the opt-in. Details are used ONLY for The Oruva
@@ -30,29 +31,16 @@
   var LS_SUB = 'oruva_nl_subscribed';
   var LS_DIS = 'oruva_nl_dismissed_at';
   var SS_SHOWN = 'oruva_nl_shown';
-  var SS_SUCCESS = 'oruva_nl_success_at';
-
-  var host = location.hostname.replace(/^www\./, '');
-  var IS_MAIN = (host === 'oruva.com.ng');
-  var IS_HOME = (location.pathname === '/' || location.pathname === '/index.html');
 
   function getSS(k) { try { return sessionStorage.getItem(k); } catch (e) { return null; } }
   function setSS(k, v) { try { sessionStorage.setItem(k, v); } catch (e) {} }
-  function delSS(k) { try { sessionStorage.removeItem(k); } catch (e) {} }
 
-  /* Arriving on the homepage right after a signup elsewhere on the site:
-     show the success message here, per spec. */
-  var justSucceeded = IS_MAIN && IS_HOME && (getSS(SS_SUCCESS) || /[?&]nl=success\b/.test(location.search));
-  if (justSucceeded) delSS(SS_SUCCESS);
-
-  if (!justSucceeded) {
-    try {
-      if (localStorage.getItem(LS_SUB)) return;
-      var d = +localStorage.getItem(LS_DIS) || 0;
-      if (d && (Date.now() - d) < DISMISS_DAYS * 864e5) return;
-      if (getSS(SS_SHOWN)) return;
-    } catch (e) {}
-  }
+  try {
+    if (localStorage.getItem(LS_SUB)) return;
+    var d = +localStorage.getItem(LS_DIS) || 0;
+    if (d && (Date.now() - d) < DISMISS_DAYS * 864e5) return;
+    if (getSS(SS_SHOWN)) return;
+  } catch (e) {}
 
   var css = '\
 .oruva-nl-overlay{position:fixed;inset:0;background:rgba(8,30,58,.62);z-index:9999;display:flex;align-items:center;justify-content:center;padding:16px;animation:oruvaNlFade .3s ease}\
@@ -126,14 +114,8 @@
   function onSuccess() {
     if (state.succeeded) return;
     state.succeeded = true;
-    if (IS_MAIN && !IS_HOME) {
-      /* Spec: the success message displays on the homepage. Carry the
-         visitor straight home (still inside oruva.com.ng) and show it
-         there. */
-      setSS(SS_SUCCESS, String(Date.now()));
-      location.assign('https://oruva.com.ng/?nl=success');
-      return;
-    }
+    /* No redirects, ever: the success message displays on the page and
+       website where the visitor signed up. */
     showSuccessCard();
   }
 
@@ -169,9 +151,6 @@
 
   function dismissSuccess() {
     if (overlayRef) overlayRef.remove();
-    if (IS_MAIN && IS_HOME && /[?&]nl=success\b/.test(location.search)) {
-      try { history.replaceState(null, '', location.pathname); } catch (e) {}
-    }
   }
 
   function build(successOnly) {
@@ -292,10 +271,7 @@
     if (successOnly) showSuccessCard();
   }
 
-  if (justSucceeded) {
-    if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', function () { build(true); });
-    else build(true);
-  } else if (document.readyState === 'loading') {
+  if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', function () { setTimeout(function () { build(false); }, SHOW_DELAY_MS); });
   } else {
     setTimeout(function () { build(false); }, SHOW_DELAY_MS);
