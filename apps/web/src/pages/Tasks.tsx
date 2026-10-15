@@ -298,7 +298,7 @@ function IgFollowBody({
               rel="noreferrer"
               className="mt-3 inline-flex w-fit items-center justify-center gap-2 rounded-xl bg-ember-500 px-4 py-2.5 text-sm font-bold text-navy-950 shadow transition hover:bg-ember-400 active:scale-[0.99]"
             >
-              1. Follow @oruvatransport on Instagram ↗
+              1. Follow @oruvatransportation on Instagram ↗
             </a>
           )}
           <div className="mt-3 flex gap-2">
