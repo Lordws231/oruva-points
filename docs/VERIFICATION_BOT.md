@@ -74,7 +74,7 @@ verified tasks.
 ```
 
 Worker env: `ORUVA_API_URL`, `ORUVA_ADMIN_KEY` (see the script header).
-The Threads modes require the @oruvatransport Threads account to be
+The Threads modes require the @oruvatransportation Threads account to be
 linked to `threads-cli` via Meta Accounts Center, like the Instagram
 worker's `instagram-cli` link.
 
@@ -82,7 +82,7 @@ worker's `instagram-cli` link.
 
 1. `ADMIN_KEY` set on the API (already required by the Instagram bot).
 2. Worker host with `instagram-cli` + `threads-cli` linked to the
-   @oruvatransport accounts, running the cron lines above.
+   @oruvatransportation accounts, running the cron lines above.
 3. Facebook: Meta app "Oruva Points" with the Facebook Login product,
    env `FB_APP_ID`, `FB_APP_SECRET`, `FB_PAGE_ID` (numeric Page id), and
    **Meta App Review approval for the `user_likes` permission** — until
