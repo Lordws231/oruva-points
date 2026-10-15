@@ -6,8 +6,8 @@ unverified, failed or unavailable check awards nothing.
 
 | Task | Points | How the follow is verified before award |
 |------|--------|------------------------------------------|
-| Follow @Oruvatransport on Instagram | 1,000 | Bot follower snapshot + bio-code ownership (`routes/instagram.ts`, `workers/ig-worker.sh`) |
-| Follow @Oruvatransport on Threads | 1,000 | Bot follower snapshot + bio-code ownership (`routes/social-verify.ts`, `workers/social-worker.sh`) |
+| Follow @oruvatransportation on Instagram | 1,000 | Bot follower snapshot + bio-code ownership (`routes/instagram.ts`, `workers/ig-worker.sh`) |
+| Follow @oruvatransportation on Threads | 1,000 | Bot follower snapshot + bio-code ownership (`routes/social-verify.ts`, `workers/social-worker.sh`) |
 | Follow @Oruvatransport on Facebook | 1,000 | Live Facebook Graph check with the user's own authorized token: `GET /me/likes/<FB_PAGE_ID>` (`facebook.ts`, `POST /api/social/facebook/verify`) |
 | Follow founder on LinkedIn | 1,000 | Pending code queue, verified against the founder's own LinkedIn follower list + the code in the claimant's About section (`routes/social-verify.ts`, `workers/social-worker.sh linkedin-*`) |
 | Follow Oruva Transportation Services on LinkedIn (company Page) | 1,000 | Same queue; the verdict is checked against the Page admin's follower list + the About-section code. The same LinkedIn profile may earn both LinkedIn tasks, but each task only once |
