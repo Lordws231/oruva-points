@@ -5,7 +5,7 @@
 # verified live by the API via the Graph API and needs no worker.
 #
 # Modes:
-#   threads-snapshot — refresh the cached @oruvatransport Threads follower
+#   threads-snapshot — refresh the cached @oruvatransportation Threads follower
 #                      list on the API (every ~30 min)
 #   threads-pending  — check queued Threads bio-code proofs and report
 #                      results (every ~5 min)
@@ -20,7 +20,7 @@
 #   ORUVA_API_URL    e.g. https://apps-api-production-8edb.up.railway.app
 #   ORUVA_ADMIN_KEY  shared secret for /api/social/admin/* (x-admin-key)
 #
-# The @oruvatransport Threads account must be linked to threads-cli
+# The @oruvatransportation Threads account must be linked to threads-cli
 # (Meta Accounts Center) before the Threads modes can run.
 
 set -euo pipefail
@@ -47,12 +47,12 @@ threads_account() {
   local accounts_json
   accounts_json="$(threads-cli accounts 2>/dev/null || echo '{"accounts":[]}')"
   local id
-  id="$(echo "$accounts_json" | jq -r '.accounts[] | select((.username // "" | ascii_downcase)=="oruvatransport") | .id // .user_fbid // empty' 2>/dev/null | head -1)"
+  id="$(echo "$accounts_json" | jq -r '.accounts[] | select((.username // "" | ascii_downcase)=="oruvatransportation") | .id // .user_fbid // empty' 2>/dev/null | head -1)"
   if [[ -z "$id" ]]; then
     id="$(echo "$accounts_json" | jq -r '.accounts[0].id // .accounts[0].user_fbid // empty' 2>/dev/null)"
   fi
   if [[ -z "$id" ]]; then
-    echo "social-worker: no linked Threads account (link @oruvatransport first)" >&2
+    echo "social-worker: no linked Threads account (link @oruvatransportation first)" >&2
     exit 1
   fi
   echo "$id"
@@ -61,11 +61,11 @@ threads_account() {
 threads_snapshot() {
   local account_id self_id entries='[]' cursor="" page=0 resp has_next
   account_id="$(threads_account)"
-  # The linked account IS @oruvatransport: its own profile gives its user id.
+  # The linked account IS @oruvatransportation: its own profile gives its user id.
   self_id="$(threads-cli profile --account-id "$account_id" 2>/dev/null \
     | jq -r '.id // .user_id // .user.id // empty' 2>/dev/null | head -1)"
   if [[ -z "$self_id" ]]; then
-    echo "social-worker: could not resolve @oruvatransport Threads user id" >&2
+    echo "social-worker: could not resolve @oruvatransportation Threads user id" >&2
     exit 1
   fi
   while (( page < 100 )); do
