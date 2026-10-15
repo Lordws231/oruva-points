@@ -503,7 +503,7 @@ function SocialFollowBody({
               className="mt-3 inline-flex w-fit items-center justify-center gap-2 rounded-xl bg-ember-500 px-4 py-2.5 text-sm font-bold text-navy-950 shadow transition hover:bg-ember-400 active:scale-[0.99]"
             >
               {isThreads
-                ? "1. Follow @Oruvatransport on Threads ↗"
+                ? "1. Follow @oruvatransportation on Threads ↗"
                 : task.id === "FOLLOW_ORUVA_LINKEDIN"
                   ? "1. Follow Oruva Transportation Services on LinkedIn ↗"
                   : "1. Follow the founder on LinkedIn ↗"}
