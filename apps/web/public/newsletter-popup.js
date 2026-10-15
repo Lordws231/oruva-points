@@ -271,9 +271,17 @@
     if (successOnly) showSuccessCard();
   }
 
+  /* Cookie consent comes FIRST (Esther's rule, 2026-10-15): wait for the
+     cookie gate (window.oruvaCookieGate, created in main.tsx and resolved
+     by the CookieConsent component when the visitor answers — or at once
+     when a saved choice exists) before this popup may show. */
+  function showWhenCookieAnswered() {
+    var gate = window.oruvaCookieGate || Promise.resolve(null);
+    gate.then(function () { build(false); });
+  }
   if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', function () { setTimeout(function () { build(false); }, SHOW_DELAY_MS); });
+    document.addEventListener('DOMContentLoaded', function () { setTimeout(showWhenCookieAnswered, SHOW_DELAY_MS); });
   } else {
-    setTimeout(function () { build(false); }, SHOW_DELAY_MS);
+    setTimeout(showWhenCookieAnswered, SHOW_DELAY_MS);
   }
 })();
