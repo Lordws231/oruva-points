@@ -233,21 +233,21 @@ export const TASKS: TaskDef[] = [
   },
   {
     id: "FOLLOW_INSTAGRAM",
-    title: "Follow @oruvatransport on Instagram",
+    title: "Follow @oruvatransportation on Instagram",
     description:
       "Follow the official Oruva Transportation Services page on Instagram, then enter your Instagram username below. Our bot checks that you follow the page, then gives you a code to add to your bio to prove the account is yours. 1,000 pts — one username can only earn this once.",
     points: FOLLOW_INSTAGRAM,
     repeatability: "once",
-    url: "https://www.instagram.com/oruvatransport/",
+    url: "https://www.instagram.com/oruvatransportation/",
   },
   {
     id: "FOLLOW_THREADS",
-    title: "Follow @Oruvatransport on Threads",
+    title: "Follow @oruvatransportation on Threads",
     description:
       "Follow the official Oruva Transportation Services page on Threads, then enter your Threads username below. Our verification bot checks that you follow the page, then gives you a code to add to your Threads bio to prove the account is yours. 1,000 pts — awarded only after verification.",
     points: FOLLOW_THREADS,
     repeatability: "once",
-    url: "https://www.threads.com/@oruvatransport",
+    url: "https://www.threads.com/@oruvatransportation",
   },
   {
     id: "FOLLOW_FACEBOOK",
