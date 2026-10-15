@@ -18,6 +18,7 @@ import Layout from "./components/Layout";
 import Home from "./pages/Home";
 import Tasks from "./pages/Tasks";
 import Leaderboard from "./pages/Leaderboard";
+import CookieConsent from "./components/CookieConsent";
 import Claim from "./pages/Claim";
 import Legal from "./pages/Legal";
 import Terms from "./pages/Terms";
@@ -40,7 +41,7 @@ export default function App() {
 
   return (
     <ConnectionProvider endpoint={endpoint}>
-      <WalletProvider wallets={wallets} autoConnect>
+      <WalletProvider wallets={wallets} autoConnect><CookieConsent />
         <WalletModalProvider>
           <AuthProvider>
             <BrowserRouter>
