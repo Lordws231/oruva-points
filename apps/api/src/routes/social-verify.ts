@@ -9,7 +9,7 @@
  *
  * How each platform is verified:
  * - Threads: bot worker (workers/social-worker.sh) keeps a follower
- *   snapshot of @Oruvatransport (threads-cli). Start requires the claimed
+ *   snapshot of @oruvatransportation (threads-cli). Start requires the claimed
  *   username to be in the snapshot (= it follows the page); the user then
  *   adds a one-time code to their Threads bio (ownership proof) and the
  *   bot confirms the code before points land.
@@ -235,7 +235,7 @@ socialRouter.post("/:taskId/start", requireAuth, (req: AuthedRequest, res) => {
         ok: false,
         reason: "not_following",
         error:
-          "@Oruvatransport doesn't show this username as a follower yet. Follow the page on Threads, wait up to ~30 minutes, then try again.",
+          "@oruvatransportation doesn't show this username as a follower yet. Follow the page on Threads, wait up to ~30 minutes, then try again.",
       });
       return;
     }
@@ -315,7 +315,7 @@ socialRouter.post("/:taskId/verify", requireAuth, (req: AuthedRequest, res) => {
       ok: false,
       reason: "not_following",
       error:
-        "this username no longer appears in @Oruvatransport's Threads followers — follow the page, then try again.",
+        "this username no longer appears in @oruvatransportation's Threads followers — follow the page, then try again.",
     });
     return;
   }
