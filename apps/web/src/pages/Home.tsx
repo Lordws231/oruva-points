@@ -377,6 +377,14 @@ export default function Home() {
         </div>
       </section>
 
+      {/* Season 1 banner */}
+      <section className="rounded-2xl border border-amber-400/40 bg-amber-400/10 px-6 py-4 text-center">
+        <p className="text-base font-semibold text-amber-200 md:text-lg">
+          🚀 Season 1 starts Monday 26 October 2026 — complete each task for
+          1,000 points and get ranked from day one.
+        </p>
+      </section>
+
       {/* Points table + calculator */}
       <section className="grid gap-6 lg:grid-cols-2">
         <div>
