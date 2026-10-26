@@ -642,7 +642,7 @@ function FacebookFollowBody({
           rel="noreferrer"
           className="mt-3 inline-flex w-fit items-center justify-center gap-2 rounded-xl bg-ember-500 px-4 py-2.5 text-sm font-bold text-navy-950 shadow transition hover:bg-ember-400 active:scale-[0.99]"
         >
-          1. Follow @Oruvatransport on Facebook ↗
+          1. Follow Oruva Transportation Services on Facebook ↗
         </a>
       )}
       {linkedName ? (
