@@ -17,7 +17,7 @@ const STEPS = [
   {
     n: 2,
     title: "Complete tasks",
-    text: "Follow @Oruvatransport on X and Facebook, @oruvatransportation on Instagram and Threads, follow the founder on X and LinkedIn, follow Oruva Transportation Services on LinkedIn, join the Oruva Discord server, post on X with the campaign hashtags, hit engagement milestones on your posts, and share live area location pinpoints.",
+    text: "Follow @Oruvatransport on X, Oruva Transportation Services on Facebook, @oruvatransportation on Instagram and Threads, follow the founder on X and LinkedIn, follow Oruva Transportation Services on LinkedIn, join the Oruva Discord server, post on X with the campaign hashtags, hit engagement milestones on your posts, and share live area location pinpoints.",
   },
   {
     n: 3,

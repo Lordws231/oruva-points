@@ -95,9 +95,9 @@ Put the returned `id` values into `X_ORUVA_USER_ID` and `X_FOUNDER_USER_ID`.
 | Follow founder @AbiodunOyaniyi on X | 1,000 | one-time |
 | Follow founder on LinkedIn | 1,000 | one-time |
 | Follow Oruva Transportation Services on LinkedIn | 1,000 | one-time |
-| Follow @Oruvatransport on Instagram | 1,000 | one-time |
-| Follow @Oruvatransport on Threads | 1,000 | one-time |
-| Follow @Oruvatransport on Facebook | 1,000 | one-time |
+| Follow @oruvatransportation on Instagram | 1,000 | one-time |
+| Follow @oruvatransportation on Threads | 1,000 | one-time |
+| Follow Oruva Transportation Services on Facebook | 1,000 | one-time |
 | Join the Oruva Discord server | 1,000 | one-time |
 | Post on X with campaign hashtags | 100 | repeatable; no daily limit; post must include a campaign hashtag; each tweet claimable once |
 | Share live area location pinpoint | 1,500 each | repeatable; ≤10/day; ≥100 m from previous pin |

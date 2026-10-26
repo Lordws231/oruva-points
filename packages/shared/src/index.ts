@@ -251,12 +251,12 @@ export const TASKS: TaskDef[] = [
   },
   {
     id: "FOLLOW_FACEBOOK",
-    title: "Follow @Oruvatransport on Facebook",
+    title: "Follow Oruva Transportation Services on Facebook",
     description:
       "Follow the official Oruva Transportation Services page on Facebook, connect your Facebook account, then tap Verify. We check your liked/followed Pages directly with Facebook before awarding the 1,000 pts — no verification, no points.",
     points: FOLLOW_FACEBOOK,
     repeatability: "once",
-    url: "https://www.facebook.com/Oruvatransport",
+    url: "https://www.facebook.com/Ogunstatenysc2016batchBplatoon3",
   },
   {
     id: "LOCATION_PIN",
